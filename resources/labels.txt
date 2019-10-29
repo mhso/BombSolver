@@ -1,0 +1,3 @@
+0: Nothing.
+1: Nothing with metal thing.
+2: Timer.

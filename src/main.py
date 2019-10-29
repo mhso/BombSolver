@@ -1,6 +1,6 @@
 from time import sleep
 from debug import log
-from model.grab_img import screenshot
+from model.grab_img import screenshot, load_test_images
 import windows_util as win_util
 
 def sleep_until_start():
@@ -18,45 +18,45 @@ def wait_for_light():
 def inspect_side(mx, my, sx, sy, sw, sh):
     win_util.mouse_move(mx, my)
     sleep(0.5)
-    return screenshot(sx, sy, sw, sh)
+    SC = screenshot(sx, sy, sw, sh)
+    sleep(0.2)
+    return SC
 
-def inspect_bomb(sw, sh):
-    mid_x = sw // 2
-    mid_y = sh // 2
+def inspect_bomb():
+    SW, SH = win_util.get_screen_size()
+    mid_x = SW // 2
+    mid_y = SH // 2
     win_util.click(mid_x, mid_y + (mid_y // 8))
     sleep(0.5)
     # Inspect front of bomb.
-    front_img = screenshot(mid_x - mid_x // 2, sh // 5, int(sw / 1.9), int(sh / 1.65))
+    front_img = screenshot(460, 220, 1000, 640)
     front_img.save("../front.png")
     sleep(0.2)
     # Rotate bomb.
     win_util.mouse_down(mid_x, mid_y, btn="right")
     sleep(0.2)
     # Inspect right side.
-    right_img = inspect_side(sw - int(sw / 2.75), mid_y + int(mid_y / 8),
-                             mid_x - int(mid_x / 4.7), sh // 20, int(sw // 4), sh - sh // 6)
+    right_img = inspect_side(SW - int(SW / 2.74), mid_y + int(mid_y / 8), 755, 60, 480, 900)
     right_img.save("../left.png")
     # Inspect left side.
-    left_img = inspect_side(int(sw / 2.8), mid_y + int(mid_y / 8),
-                            mid_x - int(mid_x / 3.8), sh // 20, int(sw // 4), sh - sh // 6)
+    left_img = inspect_side(int(SW / 2.76), mid_y + int(mid_y / 8), 755, 60, 480, 900)
     left_img.save("../right.png")
     # Inspect top side.
-    top_img = inspect_side(int(sw / 2.75), sh, mid_x - int(mid_x / 4), 0, int(sw // 4), sh)
+    top_img = inspect_side(int(SW / 2.75), SH, 720, 0, 480, SH)
     top_img.save("../top.png")
     # Inspect bottom side.
-    bottom_img = inspect_side(int(sw / 2.75), 0, mid_x - int(mid_x / 4), 0, int(sw // 4), sh)
+    bottom_img = inspect_side(int(SW / 2.75), 0, 720, 0, 480, SH)
     bottom_img.save("../bot.png")
     # Inspect back of bomb.
     win_util.mouse_up(mid_x, mid_y, btn="right")
     sleep(0.5)
-    win_util.click(sw - 100, 100, btn="right")
+    win_util.click(SW - 100, 100, btn="right")
     sleep(0.5)
     win_util.click(mid_x, mid_y + (mid_y // 8))
     sleep(0.2)
     win_util.mouse_down(mid_x, mid_y, btn="right")
     sleep(0.5)
-    back_img = inspect_side(sw - int(sw / 4.45), mid_y + (mid_y // 9),
-                            mid_x - mid_x // 2, sh // 5, int(sw / 1.9), int(sh / 1.65))
+    back_img = inspect_side(SW - int(SW / 4.45), mid_y + (mid_y // 9), 460, 220, 1000, 640)
     back_img.save("../back.png")
     sleep(0.2)
     win_util.mouse_up(mid_x, mid_y, btn="right")
@@ -66,36 +66,57 @@ def partition_main_sides(images):
     side_partitions = []
     for img in images:
         sides = []
-        side_partitions.append(sides)
+        sides.append(img.crop((105, 60, 361, 316)))
+        sides.append(img.crop((384, 62, 640, 318)))
+        sides.append(img.crop((658, 62, 914, 318)))
+        sides.append(img.crop((86, 344, 342, 600)))
+        sides.append(img.crop((373, 344, 629, 600)))
+        sides.append(img.crop((648, 344, 904, 600)))
+        side_partitions.extend(sides)
     return side_partitions
 
 def partition_short_sides(images):
     side_partitions = []
     for img in images:
         sides = []
-        side_partitions.append(sides)
+        sides.append(img.crop((30, 168, 202, 410)))
+        sides.append(img.crop((238, 165, 400, 415)))
+        sides.append(img.crop((30, 450, 200, 712)))
+        sides.append(img.crop((238, 450, 400, 712)))
+        side_partitions.extend(sides)
     return side_partitions
 
 def partition_long_sides(images):
     side_partitions = []
-    for img in images:
-        sides = []
-        side_partitions.append(sides)
+    # Left side.
+    side_partitions.append(images[0].crop((98, 144, 242, 356)))
+    side_partitions.append(images[0].crop((282, 144, 425, 354)))
+    side_partitions.append(images[0].crop((90, 388, 240, 714)))
+    side_partitions.append(images[0].crop((282, 388, 430, 714)))
+    side_partitions.append(images[0].crop((90, 748, 240, 956)))
+    side_partitions.append(images[0].crop((282, 748, 430, 956)))
+    # Right side.
+    side_partitions.append(images[1].crop((100, 136, 240, 300)))
+    side_partitions.append(images[1].crop((270, 134, 420, 300)))
+    side_partitions.append(images[1].crop((90, 344, 240, 650)))
+    side_partitions.append(images[1].crop((276, 344, 434, 650)))
+    side_partitions.append(images[1].crop((80, 694, 240, 926)))
+    side_partitions.append(images[1].crop((274, 690, 440, 926)))
     return side_partitions
 
 def partition_sides(images):
-    main_sides = partition_short_sides(images[0:2])
+    main_sides = partition_main_sides(images[0:2])
     short_sides = partition_short_sides(images[2:4])
     long_sides = partition_long_sides(images[4:6])
     return (main_sides, short_sides, long_sides)
 
-log("Waiting for level selection...")
-log("Press S when a level has been selected.")
-sleep_until_start()
-log("Waiting for level to start...")
-SCREEN_W, SCREEN_H = win_util.get_screen_size()
-#start_level(screen_w, screen_h)
-#wait_for_light()
-log("Inspecting bomb...")
-IMAGES = inspect_bomb(SCREEN_W, SCREEN_H)
-SIDE_PARTITIONS = partition_sides(IMAGES)
+if __name__ == "__main__":
+    log("Waiting for level selection...")
+    log("Press S when a level has been selected.")
+    sleep_until_start()
+    log("Waiting for level to start...")
+    #start_level(screen_w, screen_h)
+    #wait_for_light()
+    log("Inspecting bomb...")
+    IMAGES = inspect_bomb()
+    SIDE_PARTITIONS = partition_sides(IMAGES)

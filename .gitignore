@@ -1,2 +1,5 @@
 *.png
 .vscode
+/resources/labeled_images/
+/resources/training_images/
+*/__pycache__

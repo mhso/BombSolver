@@ -1,0 +1,79 @@
+import numpy as np
+from keras import losses
+from keras.backend.tensorflow_backend import set_session, clear_session
+from keras.layers import Dense, Conv2D, BatchNormalization, Input, Flatten
+from keras.layers.core import Activation
+from keras.optimizers import SGD
+from keras.models import Model, clone_model
+from keras.regularizers import l2
+from keras.layers import LeakyReLU
+import config
+
+def set_nn_config():
+    # Clean up from previous TF graphs.
+    tf.reset_default_graph()
+    clear_session()
+
+    # Config options, to stop TF from eating all GPU memory.
+    nn_config = tf.ConfigProto()
+    nn_config.gpu_options.per_process_gpu_memory_fraction = config.MAX_GPU_FRACTION
+    nn_config.gpu_options.allow_growth = True
+    set_session(tf.Session(config=nn_config))
+
+def conv_layer(prev, filters, kernel_size):
+    conv = Conv2D(filters, kernel_size=(kernel_size, kernel_size), strides=1, padding="same",
+                 use_bias=config.USE_BIAS,
+                 kernel_regularizer=l2(config.REGULARIZER_CONST))(prev)
+    conv = BatchNormalization()(conv)
+    conv = LeakyReLU()(conv)
+    return conv
+
+def output_layer(prev):
+    out = Flatten()(prev)
+
+    out = Dense(config.OUTPUT_DIM, kernel_regularizer=l2(config.REGULARIZER_CONST),
+                use_bias=config.USE_BIAS)(out)
+
+    out = Activation("sigmoid", name="head")(out)
+    return out
+
+def compile_model(model):
+    model.compile(optimizer=SGD(lr=config.LEARNING_RATE,
+                                decay=config.WEIGHT_DECAY,
+                                momentum=config.MOMENTUM),
+                  loss=[losses.binary_crossentropy],
+                  metrics=[losses.binary_crossentropy, "accuracy"])
+
+def build_model():
+    set_nn_config()
+
+    inp = Input(config.INPUT_DIM)
+
+    layer = conv_layer(inp, config.CONV_FILTERS, 3)
+
+    out = output_layer(layer)
+    model = Model(inputs=inp, outputs=[out])
+    compile_model(model)
+    model._make_predict_function()
+    return model
+
+def save_model(model):
+    pass
+
+def load_model():
+    pass
+
+def shape_input(inp):
+    reshaped = inp
+    if len(inp.shape) < 4:
+        reshaped = np.array([inp]).reshape((-1)+config.INPUT_DIM)
+    return reshaped
+
+def predict(model, inp):
+    shaped_input = shape_input(inp)
+    return model.predict(shaped_input)
+
+def train(model, inputs, expected_out):
+    result = model.fit(inputs, expected_out, batch_size=config.BATCH_SIZE, verbose=1,
+                                epochs=config.EPOCHS_PER_BATCH, validation_split=config.VALIDATION_SPLIT)
+    return result.history
