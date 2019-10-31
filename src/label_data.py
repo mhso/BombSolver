@@ -19,7 +19,7 @@ if len(FILES) == 0:
     print("No data to label, exiting...")
     exit(0)
 cv2.namedWindow("Data labeling")
-for file in FILES:
+for i, file in enumerate(FILES):
     img = cv2.imread(file, cv2.IMREAD_COLOR)
     cv2.imshow("Data labeling", img)
     key = cv2.waitKey(0)
@@ -38,4 +38,5 @@ for file in FILES:
             break
         key_val += chr(key)
     label_img(img, int(key_val))
-    print(f"Labeled: {int(key_val)} ({config.LABELS[int(key_val)]})", flush=True)
+    print(f"Labeled: {int(key_val)} ({config.LABELS[int(key_val)]}) ({(i+1)}/{len(FILES)})",
+          flush=True)

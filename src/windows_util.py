@@ -2,7 +2,13 @@ import win32api as win
 import win32con as con
 
 S_KEY_HEX = 0x53
+Q_KEY_HEX = 0x51
 s_state = win.GetKeyState(S_KEY_HEX)
+q_state = win.GetKeyState(Q_KEY_HEX)
+
+def q_pressed():
+    key_q = win.GetKeyState(Q_KEY_HEX)
+    return key_q != q_state and key_q < 0
 
 def s_pressed():
     key_s = win.GetKeyState(S_KEY_HEX)

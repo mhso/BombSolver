@@ -62,11 +62,11 @@ def inspect_bomb():
     sleep(0.2)
     win_util.mouse_down(mid_x, mid_y, btn="right")
     sleep(0.5)
-    back_img = inspect_side(SW - int(SW / 4.45), mid_y + (mid_y // 9), 460, 220, 1000, 640)
+    back_img = inspect_side(SW - int(SW / 4.4), mid_y + (mid_y // 9), 460, 220, 1000, 640)
     back_img.save("../back.png")
     sleep(0.2)
     win_util.mouse_up(mid_x, mid_y, btn="right")
-    return (front_img, back_img, left_img, right_img, top_img, bottom_img)
+    return (back_img, front_img, left_img, right_img, top_img, bottom_img)
 
 def partition_main_sides(images):
     side_partitions = []
@@ -122,7 +122,7 @@ def identify_side_features(sides, model):
     i = 0
     for side in sides:
         for img in side:
-            reshaped = dataset.resize_img(dataset.pad_image(array(img)))
+            reshaped = cv2.cvtColor(dataset.resize_img(dataset.pad_image(array(img))), cv2.COLOR_RGB2BGR)
             pred = classifier.predict(model, reshaped)
             predict_label = classifier.get_best_prediction(pred)[0]
             predictions[i] = predict_label
@@ -133,6 +133,24 @@ def identify_side_features(sides, model):
 def print_features(features):
     for feature, amount in enumerate(features):
         print(f"{config.LABELS[feature]} - {amount}")
+
+def solve_simple_wires(img):
+    pass
+
+def select_module(module):
+    SW, SH = win_util.get_screen_size()
+    start_x = SW * 0.35
+    start_y = SH * 0.35
+    offset_x = 300
+    offset_y = 300
+    win_util.mouse_move(int(start_x + ((module % 3) * offset_x)),
+                        int(start_y + ((module // 3) * offset_y)))
+
+def solve_modules(predictions):
+    modules = predictions[:12]
+    for module, label in enumerate(modules):
+        print(f"Module {module+1} is (maybe) {label} ({config.LABELS[label]})")
+        #select_module(i)
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2
@@ -153,6 +171,8 @@ if __name__ == "__main__":
     SIDE_PARTITIONS = partition_sides(IMAGES)
     FEATURES, PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
 
+    solve_modules(PREDICTIONS)
+
     cv2.namedWindow("Predictions")
 
     label = 0
@@ -165,6 +185,6 @@ if __name__ == "__main__":
             label += 1
             key = cv2.waitKey(0)
             if key == ord('q'):
-                break
+                exit(0)
 
     print_features(FEATURES)
