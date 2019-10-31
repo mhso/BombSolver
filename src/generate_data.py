@@ -4,6 +4,8 @@ from debug import log
 
 log("Waiting for user to press S")
 main.sleep_until_start()
+main.start_level()
+main.wait_for_light()
 log("Inspecting bomb...")
 IMAGES = main.inspect_bomb()
 NUM_IMAGES = len(glob("../resources/training_images/*.png"))

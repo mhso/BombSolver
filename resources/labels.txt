@@ -1,3 +1,41 @@
-0: Nothing.
-1: Nothing with metal thing.
-2: Timer.
+=== SIDES ===
+0: Nothing
+1: Big battery
+2: Double small batteries
+3: Serial number
+4: Metal thing without parallel
+5: Metal thing with parallel
+6: Lit SIG indicator
+7: Unlit SIG indicator
+8: Lit NSA indicator
+9: Unlit NSA indicator
+10: Lit BOB indicator
+11: Unlit BOB indicator
+12: Lit FRQ indicator
+13: Lit SND indicator
+14: Unlit SND indicator
+15: Lit CLR indicator
+16: Unlit CLR indicator
+17: Lit CAR indicator
+18: Unlit CAR indicator
+19: Lit IND indicator
+20: Lit MSA indicator
+21: Unlit MSA indicator
+22: Lit TRN indicator
+23: Unlit TRN indicator
+24: Lit FRK indicator
+25: Unlit FRK indicator
+=== FRONT AND BACK ===
+26: Nothing
+27: Timer
+28: Wires
+29: Button
+30: Symbols
+31: Simon Says
+32: Wire Sequence
+33: Complicated Wires
+34: Memory game
+35: Who's on first?
+36: Maze
+37: Password
+38: Morse

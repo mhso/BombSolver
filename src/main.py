@@ -1,7 +1,12 @@
 from time import sleep
+from numpy import array, argmax
+import cv2
 from debug import log
 from model.grab_img import screenshot, load_test_images
 import windows_util as win_util
+import model.classifier as classifier
+import config
+import model.dataset as dataset
 
 def sleep_until_start():
     while True:
@@ -9,8 +14,9 @@ def sleep_until_start():
             break
         sleep(0.1)
 
-def start_level(sw, sh):
-    win_util.click(int(sw - sw/2.6), int(sh - sh/3.3))
+def start_level():
+    SW, SH = win_util.get_screen_size()
+    win_util.click(int(SW - SW/2.6), int(SH - SH/3.3))
 
 def wait_for_light():
     sleep(16)
@@ -110,13 +116,55 @@ def partition_sides(images):
     long_sides = partition_long_sides(images[4:6])
     return (main_sides, short_sides, long_sides)
 
+def identify_side_features(sides, model):
+    features = [0] * config.OUTPUT_DIM
+    predictions = [0] * config.OUTPUT_DIM
+    i = 0
+    for side in sides:
+        for img in side:
+            reshaped = dataset.resize_img(dataset.pad_image(array(img)))
+            pred = classifier.predict(model, reshaped)
+            predict_label = classifier.get_best_prediction(pred)[0]
+            predictions[i] = predict_label
+            features[predict_label] += 1
+            i += 1
+    return (features, predictions)
+
+def print_features(features):
+    for feature, amount in enumerate(features):
+        print(f"{config.LABELS[feature]} - {amount}")
+
 if __name__ == "__main__":
+    config.MAX_GPU_FRACTION = 0.2
+    log("Loading classifier model...")
+    MODEL = classifier.load_from_file("../resources/trained_models/model")
+
     log("Waiting for level selection...")
     log("Press S when a level has been selected.")
     sleep_until_start()
+
+    start_level()
+
     log("Waiting for level to start...")
-    #start_level(screen_w, screen_h)
-    #wait_for_light()
+    wait_for_light()
+
     log("Inspecting bomb...")
     IMAGES = inspect_bomb()
     SIDE_PARTITIONS = partition_sides(IMAGES)
+    FEATURES, PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
+
+    cv2.namedWindow("Predictions")
+
+    label = 0
+    for side in SIDE_PARTITIONS:
+        for img in side:
+            pred_label = PREDICTIONS[label]
+            print(f"Predicted: {pred_label} ({config.LABELS[pred_label]})")
+            img = cv2.cvtColor(array(img, dtype="uint8"), cv2.COLOR_RGB2BGR)
+            cv2.imshow("Predictions", img)
+            label += 1
+            key = cv2.waitKey(0)
+            if key == ord('q'):
+                break
+
+    print_features(FEATURES)

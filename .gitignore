@@ -2,4 +2,6 @@
 .vscode
 /resources/labeled_images/
 /resources/training_images/
-*/__pycache__
+/resources/models/
+__pycache__
+/resources/
