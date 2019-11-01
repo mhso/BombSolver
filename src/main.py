@@ -137,6 +137,22 @@ def print_features(features):
     for feature, amount in enumerate(features):
         print(f"{config.LABELS[feature]} - {amount}")
 
+def get_serial_number(img):
+    
+    return "serial_template"
+
+def extract_side_features(sides, labels):
+    index = 0
+    features = {}
+    for side in sides:
+        for img in side:
+            if labels[index] == 3: # Serial number.
+                serial_number = get_serial_number(img)
+                print(serial_number)
+                features["serial_number"] = serial_number
+            index += 1
+    return features
+
 def select_module(module):
     SW, SH = win_util.get_screen_size()
     start_x = SW * 0.35
@@ -163,8 +179,7 @@ def screenshot_module():
     SW, SH = win_util.get_screen_size()
     return screenshot(int(SW * 0.43), int(SH*0.36), 300, 300)
 
-def solve_modules(predictions, solver_funcs):
-    modules = predictions[:12]
+def solve_modules(modules, solver_funcs, side_features):
     for module, label in enumerate(modules):
         print(f"Module {module+1} is (maybe) {label} ({config.LABELS[label]})")
         if label > 27 and label == 28:
@@ -204,7 +219,8 @@ if __name__ == "__main__":
         solvers.solve_password, solvers.solve_morse
     ]
 
-    solve_modules(PREDICTIONS, SOLVERS)
+    SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:])
+    solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES)
     """
     cv2.namedWindow("Predictions")
 
