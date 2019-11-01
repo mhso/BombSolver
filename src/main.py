@@ -170,7 +170,8 @@ def solve_modules(predictions, solver_funcs):
         if label > 27 and label == 28:
             select_module(module)
             SC = array(screenshot_module())
-            solver_funcs[label-28](SC)
+            result = solver_funcs[label-28](SC)
+            print(f"Cut wire at {result}")
             sleep(1)
             deselect_module(module)
             break

@@ -44,7 +44,7 @@ def solve_simple_wires(img):
     color_names = ["black", "yellow", "blue", "white", "red"]
     num_wires = 0
     color_hist = [0, 0, 0, 0, 0]
-    wire_hist = [0, 0, 0, 0, 0]
+    wire_hist = [0, 0, 0, 0, 0, 0]
     for i, coord in enumerate(coords):
         #cv2.rectangle(cv2_img, coord, (coord[0]+2, coord[1]+2), (0, 220, 0), 3)
         for j, (low, high) in enumerate(colors):
@@ -59,9 +59,9 @@ def solve_simple_wires(img):
         last_wire = get_nth_wire(wire_hist, -1)
         if color_hist[4] == 0: # There are no red wires.
             return get_nth_wire(wire_hist, 2) # Cut second wire.
-        elif wire_hist[last_wire] == 3: # Last wire is white.
+        if wire_hist[last_wire] == 3: # Last wire is white.
             return get_nth_wire(wire_hist, -1) # Cut last wire
-        elif color_hist[2] > 1: # More than one blue wire.
+        if color_hist[2] > 1: # More than one blue wire.
             return get_nth_wire(wire_hist, -1, 2) # Cut last blue wire.
         return get_nth_wire(wire_hist, -1) # Cut the last wire.
     # TODO: Need to be able to read serial number to solve higher num of wires.
