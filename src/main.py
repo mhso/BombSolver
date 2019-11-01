@@ -1,10 +1,12 @@
 from time import sleep
+from sys import argv
 from numpy import array, argmax
 import cv2
 from debug import log
 from model.grab_img import screenshot, load_test_images
 import windows_util as win_util
 import model.classifier as classifier
+import module_solvers as solvers
 import config
 import model.dataset as dataset
 
@@ -122,7 +124,8 @@ def identify_side_features(sides, model):
     i = 0
     for side in sides:
         for img in side:
-            reshaped = cv2.cvtColor(dataset.resize_img(dataset.pad_image(array(img))), cv2.COLOR_RGB2BGR)
+            reshaped = cv2.cvtColor(dataset.resize_img(dataset.pad_image(array(img))),
+                                    cv2.COLOR_RGB2BGR)
             pred = classifier.predict(model, reshaped)
             predict_label = classifier.get_best_prediction(pred)[0]
             predictions[i] = predict_label
@@ -134,23 +137,43 @@ def print_features(features):
     for feature, amount in enumerate(features):
         print(f"{config.LABELS[feature]} - {amount}")
 
-def solve_simple_wires(img):
-    pass
-
 def select_module(module):
     SW, SH = win_util.get_screen_size()
     start_x = SW * 0.35
     start_y = SH * 0.35
     offset_x = 300
     offset_y = 300
-    win_util.mouse_move(int(start_x + ((module % 3) * offset_x)),
-                        int(start_y + ((module // 3) * offset_y)))
+    x = int(start_x + ((module % 3) * offset_x))
+    y = int(start_y + ((module // 3) * offset_y))
+    win_util.click(x, y)
+    sleep(1.5)
 
-def solve_modules(predictions):
+def deselect_module(module):
+    SW, SH = win_util.get_screen_size()
+    start_x = SW * 0.35
+    start_y = SH * 0.35
+    offset_x = 300
+    offset_y = 300
+    x = int(start_x + ((module % 3) * offset_x))
+    y = int(start_y + ((module // 3) * offset_y))
+    win_util.click(300, 300, btn="right")
+    sleep(1)
+
+def screenshot_module():
+    SW, SH = win_util.get_screen_size()
+    return screenshot(int(SW * 0.43), int(SH*0.36), 300, 300)
+
+def solve_modules(predictions, solver_funcs):
     modules = predictions[:12]
     for module, label in enumerate(modules):
         print(f"Module {module+1} is (maybe) {label} ({config.LABELS[label]})")
-        #select_module(i)
+        if label > 27 and label == 28:
+            select_module(module)
+            SC = array(screenshot_module())
+            solver_funcs[label-28](SC)
+            sleep(1)
+            deselect_module(module)
+            break
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2
@@ -161,18 +184,27 @@ if __name__ == "__main__":
     log("Press S when a level has been selected.")
     sleep_until_start()
 
-    start_level()
+    if "skip" not in argv:
+        start_level()
 
-    log("Waiting for level to start...")
-    wait_for_light()
+        log("Waiting for level to start...")
+        wait_for_light()
 
     log("Inspecting bomb...")
     IMAGES = inspect_bomb()
     SIDE_PARTITIONS = partition_sides(IMAGES)
     FEATURES, PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
 
-    solve_modules(PREDICTIONS)
+    SOLVERS = [
+        solvers.solve_simple_wires, solvers.solve_button,
+        solvers.solve_symbols, solvers.solve_simon,
+        solvers.solve_wire_sequence, solvers.solve_complicated_wires,
+        solvers.solve_memory, solvers.solve_whos_first, solvers.solve_maze,
+        solvers.solve_password, solvers.solve_morse
+    ]
 
+    solve_modules(PREDICTIONS, SOLVERS)
+    """
     cv2.namedWindow("Predictions")
 
     label = 0
@@ -188,3 +220,4 @@ if __name__ == "__main__":
                 exit(0)
 
     print_features(FEATURES)
+    """
