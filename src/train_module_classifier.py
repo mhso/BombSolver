@@ -1,15 +1,17 @@
 from sys import argv
 import numpy as np
 import cv2
-import model.classifier as classifier
-import model.dataset as dataset
+import model.module_classifier as classifier
+import model.classifier_util as classifier_util
+import model.dataset_util as dataset_util
+import model.module_dataset as dataset
 from view.graphs import plot_prediction
 import config
 from debug import log
 
 def train_network(model, train_images, train_labels, test_images, test_labels, steps=500):
     for i in range(steps):
-        sample_images, sample_labels = dataset.sample_data(train_images, train_labels)
+        sample_images, sample_labels = dataset_util.sample_data(train_images, train_labels, config.MODULE_BATCH_SIZE)
         result = classifier.train(MODEL, sample_images, sample_labels)
         acc = calculate_accuracy(MODEL, test_images, test_labels)
         model_acc = result['val_acc'][-1]*100
@@ -17,7 +19,7 @@ def train_network(model, train_images, train_labels, test_images, test_labels, s
         save_string = ""
         if i % 10 == 0:
             path = "../resources/trained_models/model"
-            classifier.save_to_file(model, path)
+            classifier_util.save_to_file(model, path)
             save_string = " - Saving model to file..."
         print(f"Step {i+1}/{steps} - Real acc: {acc:.3f}% - "
               + f"Training acc: {model_acc:.3f}% - Model loss: {model_loss}{save_string}")
@@ -63,9 +65,10 @@ train_images, train_labels, test_images, test_labels = extract_test_data(images,
 
 MODEL = None
 FILE_PATH = "../resources/trained_models/model"
-if classifier.model_exists(FILE_PATH) and "train" not in argv:
+if classifier_util.model_exists(FILE_PATH) and "train" not in argv:
     log("Loading Neural Network from file...")
-    MODEL = classifier.load_from_file(FILE_PATH)
+    MODEL = classifier_util.load_from_file(FILE_PATH)
+    classifier.compile_model(MODEL)
 else:
     log("Building Neural Network model...")
     MODEL = classifier.build_model()
@@ -74,9 +77,9 @@ else:
     log("Training network...")
     train_network(MODEL, train_images, train_labels, test_images, test_labels)
 
-if not classifier.model_exists(FILE_PATH):
+if not classifier_util.model_exists(FILE_PATH):
     log("Saving model to file...")
-    classifier.save_to_file(MODEL, FILE_PATH)
+    classifier_util.save_to_file(MODEL, FILE_PATH)
 
 if "test" in argv:
     for i in range(test_images.shape[0]):

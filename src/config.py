@@ -1,7 +1,12 @@
+# Misc options.
+VERBOSITY = 0 #
+
 # Neural network options.
 INPUT_DIM = (3, 64, 64)
+SERIAL_INPUT_DIM = (1, 32, 32)
 
 OUTPUT_DIM = 39
+SERIAL_OUTPUT_DIM = 36
 
 MAX_GPU_FRACTION = 0.4
 
@@ -21,7 +26,8 @@ MOMENTUM = 0.9
 
 WEIGHT_DECAY = 1e-4
 
-BATCH_SIZE = 128
+MODULE_BATCH_SIZE = 128
+SERIAL_BATCH_SIZE = 128
 
 EPOCHS_PER_BATCH = 5
 
@@ -67,4 +73,16 @@ LABELS = [
     "Maze",
     "Password",
     "Morse"
+]
+
+# Image analysis specific
+SERIAL_MIN_RED = (110, 0, 0)
+SERIAL_MAX_RED = (255, 99, 71)
+
+WIRE_COLOR_RANGE = [
+    ((0, 0, 0), (20, 20, 20)),
+    ((220, 220, 0), (255, 255, 20)),
+    ((30, 30, 180), (100, 100, 255)),
+    ((210, 210, 210), (255, 255, 255)),
+    ((139, 0, 0), (255, 99, 71))
 ]

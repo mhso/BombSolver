@@ -1,11 +1,12 @@
 from time import sleep
 from sys import argv
-from numpy import array, argmax
+from numpy import array
 import cv2
 from debug import log
-from model.grab_img import screenshot, load_test_images
+from model.grab_img import screenshot
 import windows_util as win_util
-import model.classifier as classifier
+import model.module_classifier as module_classifier
+import model.classifier_util as classifier_util
 import module_solvers as solvers
 import config
 import model.dataset as dataset
@@ -126,8 +127,8 @@ def identify_side_features(sides, model):
         for img in side:
             reshaped = cv2.cvtColor(dataset.resize_img(dataset.pad_image(array(img))),
                                     cv2.COLOR_RGB2BGR)
-            pred = classifier.predict(model, reshaped)
-            predict_label = classifier.get_best_prediction(pred)[0]
+            pred = module_classifier.predict(model, reshaped)
+            predict_label = module_classifier.get_best_prediction(pred)[0]
             predictions[i] = predict_label
             features[predict_label] += 1
             i += 1
@@ -194,7 +195,7 @@ def solve_modules(modules, solver_funcs, side_features):
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2
     log("Loading classifier model...")
-    MODEL = classifier.load_from_file("../resources/trained_models/model")
+    MODEL = classifier_util.load_from_file("../resources/trained_models/model")
 
     log("Waiting for level selection...")
     log("Press S when a level has been selected.")

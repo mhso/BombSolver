@@ -1,6 +1,7 @@
 from enum import Enum
 from debug import log
 import windows_util as win_util
+import config
 
 def color_in_range(img, pixel, low, high):
     red = img[:, :, 0]
@@ -34,13 +35,7 @@ def solve_simple_wires(img, **kwargs):
         (157, 74), (198, 70), (240, 72)
     ]
     # Colords of wires.
-    colors = [
-        ((0, 0, 0), (20, 20, 20)),
-        ((220, 220, 0), (255, 255, 20)),
-        ((30, 30, 180), (100, 100, 255)),
-        ((210, 210, 210), (255, 255, 255)),
-        (((139, 0, 0)), (255, 99, 71))
-    ]
+    colors = config.WIRE_COLOR_RANGE
     Colors = Enum("Colors", {"Black":0, "Yellow":1, "Blue":2, "White":3, "Red":4})
     num_wires = 0
     color_hist = [0, 0, 0, 0, 0]
