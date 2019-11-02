@@ -1,20 +1,27 @@
+from glob import glob
+import cv2
+import numpy as np
 from keras.datasets import mnist
 from keras.utils import to_categorical
 import config
+import model.dataset_util as dataset_util
 
 def load_dataset():
-    img_rows = 28
-    img_cols = 28
+    img_rows = 32
+    img_cols = 32
 
-    (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    x_train = x_train.reshape(x_train.shape[0], 1, img_rows, img_cols)
-    x_test = x_test.reshape(x_test.shape[0], 1, img_rows, img_cols)
+    images = []
+    labels = []
+    characters = [x for x in range(10)] + [chr(x) for x in range(97, 123)]
+    for label in range(config.SERIAL_OUTPUT_DIM):
+        files = glob(f"../resources/labeled_images/serial/{characters[label]}/*.png")
+        one_hot_labels = [0] * config.SERIAL_OUTPUT_DIM
+        one_hot_labels[label] = 1
+        for i, file in enumerate(files):
+            image = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
+            reshaped = image.reshape(config.SERIAL_INPUT_DIM).astype("float32")
+            reshaped /= 255
+            images.append(reshaped)
+            labels.append(np.array(one_hot_labels))
 
-    x_train = x_train.astype('float32')
-    x_test = x_test.astype('float32')
-    x_train /= 255
-    x_test /= 255
-
-    y_train = to_categorical(y_train, config.SERIAL_OUTPUT_DIM)
-    y_test = to_categorical(y_test, config.SERIAL_OUTPUT_DIM)
-    return x_train, y_train, x_test, y_test
+    return dataset_util.extract_test_data(np.array(images), np.array(labels), config.SERIAL_OUTPUT_DIM)

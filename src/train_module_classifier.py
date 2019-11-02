@@ -58,10 +58,8 @@ def calculate_accuracy(model, images, labels):
     return (correct/images.shape[0])*100
 
 log("Loading dataset...")
-images, labels = dataset.load_dataset()
+train_images, train_labels, test_images, test_labels = dataset.load_dataset()
 log(f"{images.shape[0]} data points loaded.")
-
-train_images, train_labels, test_images, test_labels = extract_test_data(images, labels)
 
 MODEL = None
 FILE_PATH = "../resources/trained_models/model"

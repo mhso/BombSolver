@@ -2,6 +2,7 @@ from glob import glob
 import cv2
 import numpy as np
 import config
+import model.dataset_util as dataset_util
 
 def load_dataset():
     images = []
@@ -16,4 +17,4 @@ def load_dataset():
             reshaped /= 255
             images.append(reshaped)
             labels.append(np.array(one_hot_labels))
-    return (np.array(images), np.array(labels))
+    return dataset_util.extract_test_data(np.array(images), np.array(labels), config.OUTPUT_DIM)
