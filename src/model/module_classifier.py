@@ -74,6 +74,6 @@ def get_best_prediction(prediction):
     return np.argmax(prediction, axis=1)
 
 def train(model, inputs, expected_out):
-    result = model.fit(inputs, expected_out, batch_size=config.BATCH_SIZE, verbose=0,
+    result = model.fit(inputs, expected_out, batch_size=config.MODULE_BATCH_SIZE, verbose=0,
                        epochs=config.EPOCHS_PER_BATCH, validation_split=config.VALIDATION_SPLIT)
     return result.history

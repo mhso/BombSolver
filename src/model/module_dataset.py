@@ -12,6 +12,8 @@ def load_dataset():
         one_hot_labels[label] = 1
         for i, file in enumerate(files):
             image = cv2.imread(file, cv2.IMREAD_COLOR)
-            images.append(image.reshape(config.INPUT_DIM).astype("float32"))
+            reshaped = image.reshape(config.INPUT_DIM).astype("float32")
+            reshaped /= 255
+            images.append(reshaped)
             labels.append(np.array(one_hot_labels))
     return (np.array(images), np.array(labels))

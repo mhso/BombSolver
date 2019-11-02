@@ -9,7 +9,7 @@ import model.module_classifier as module_classifier
 import model.classifier_util as classifier_util
 import module_solvers as solvers
 import config
-import model.dataset as dataset
+import model.dataset_util as dataset_util
 
 def sleep_until_start():
     while True:
@@ -125,9 +125,10 @@ def identify_side_features(sides, model):
     i = 0
     for side in sides:
         for img in side:
-            reshaped = cv2.cvtColor(dataset.resize_img(dataset.pad_image(array(img))),
-                                    cv2.COLOR_RGB2BGR)
-            pred = module_classifier.predict(model, reshaped)
+            padded = dataset_util.pad_image(array(img))
+            reshaped = dataset_util.resize_img(padded, config.INPUT_DIM[1:])
+            converted = cv2.cvtColor(reshaped, cv2.COLOR_RGB2BGR) / 255
+            pred = module_classifier.predict(model, converted)
             predict_label = module_classifier.get_best_prediction(pred)[0]
             predictions[i] = predict_label
             features[predict_label] += 1

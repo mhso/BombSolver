@@ -23,10 +23,11 @@ def inspect_and_reset(callback):
     main.sleep_until_start()
 
     inspections = -1
-    if "rounds=" in argv:
-        for s in argv[1:]:
-            if s.find("rounds=") != -1:
-                inspections = int(s.split("=")[1])
+    if len(argv) > 1:
+        inspections = int(argv[1])
+
+    inspect_str = "infinitely many" if inspections == -1 else str(inspections)
+    log(f"Running {inspect_str} times.")
 
     while inspections and not win_util.q_pressed():
         if "skip" not in argv:
@@ -37,15 +38,6 @@ def inspect_and_reset(callback):
         SIDE_PARTITIONS = main.partition_sides(IMAGES)
 
         callback(SIDE_PARTITIONS)
-
-        NUM_IMAGES = len(glob("../resources/training_images/*.png"))
-        INDEX = NUM_IMAGES
-        for side in SIDE_PARTITIONS:
-            for img in side:
-                img.save(f"../resources/training_images/{INDEX:03d}.png")
-                INDEX += 1
-
-        log(f"Captured {INDEX-NUM_IMAGES} images. Total images: {INDEX}")
 
         inspections -= 1
         restart_level()
