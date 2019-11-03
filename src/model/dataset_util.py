@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import config
 
 def extract_test_data(images, labels, output_dim):
     test_images = []

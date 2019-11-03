@@ -6,8 +6,10 @@ from debug import log
 from model.grab_img import screenshot
 import windows_util as win_util
 import model.module_classifier as module_classifier
+import model.serial_classifier as serial_classifier
 import model.classifier_util as classifier_util
 import module_solvers as solvers
+import serial_number
 import config
 import model.dataset_util as dataset_util
 
@@ -129,7 +131,7 @@ def identify_side_features(sides, model):
             reshaped = dataset_util.resize_img(padded, config.INPUT_DIM[1:])
             converted = cv2.cvtColor(reshaped, cv2.COLOR_RGB2BGR) / 255
             pred = module_classifier.predict(model, converted)
-            predict_label = module_classifier.get_best_prediction(pred)[0]
+            predict_label = classifier_util.get_best_prediction(pred)[0]
             predictions[i] = predict_label
             features[predict_label] += 1
             i += 1
@@ -139,20 +141,43 @@ def print_features(features):
     for feature, amount in enumerate(features):
         print(f"{config.LABELS[feature]} - {amount}")
 
-def get_serial_number(img):
-    
-    return "serial_template"
+def serial_contains_vowel(serial_num):
+    vowels = ["a", "e", "i", "u", "y"]
+    for c in serial_num:
+        if c in vowels:
+            return True
+    return False
 
-def extract_side_features(sides, labels):
+def extract_serial_number_features(serial_num):
+    features = {}
+    features["last_serial_odd"] = (int(serial_num[-1])) % 2 == 1
+    features["contains_vowel"] = serial_contains_vowel(serial_num)
+    return features
+
+def extract_side_features(sides, labels, serial_model):
     index = 0
     features = {}
+    batteries = 0
     for side in sides:
         for img in side:
-            if labels[index] == 3: # Serial number.
-                serial_number = get_serial_number(img)
-                print(serial_number)
-                features["serial_number"] = serial_number
+            cv2_img = cv2.cvtColor(array(img), cv2.COLOR_RGB2BGR)
+            if labels[index] == 1:
+                batteries += 1
+            elif labels[index] == 2:
+                batteries += 2
+            elif labels[index] == 3: # Serial number.
+                serial_num = serial_number.get_serial_number(cv2_img, serial_model)
+                if serial_num is None:
+                    log(f"Serial number could not be determined.")
+                    index += 1
+                    continue
+                log(f"Serial number: {serial_num}", verbosity_level=1)
+                features["serial_number"] = serial_num
+                serial_features = extract_serial_number_features(serial_num)
+                log(f"Serial number features: {serial_features}", verbosity_level=1)
+                features.update(serial_features)
             index += 1
+    features["batteries"] = batteries
     return features
 
 def select_module(module):
@@ -179,16 +204,25 @@ def deselect_module(module):
 
 def screenshot_module():
     SW, SH = win_util.get_screen_size()
-    return screenshot(int(SW * 0.43), int(SH*0.36), 300, 300)
+    x = int(SW * 0.43)
+    y = int(SH*0.36)
+    return screenshot(x, y, 300, 300), x, y
 
 def solve_modules(modules, solver_funcs, side_features):
     for module, label in enumerate(modules):
         print(f"Module {module+1} is (maybe) {label} ({config.LABELS[label]})")
         if label > 27 and label == 28:
             select_module(module)
-            SC = array(screenshot_module())
-            result = solver_funcs[label-28](SC)
-            print(f"Cut wire at {result}")
+            SC, mod_x, mod_y = screenshot_module()
+            SC = array(SC)
+            result, coords = solver_funcs[label-28](SC, side_features)
+            if result == -1:
+                log(coords)
+                continue
+            log(f"Cut wire at {result}")
+            wire_y, wire_x = coords[result]
+            sleep(0.5)
+            win_util.click(mod_x + wire_x, mod_y + wire_y)
             sleep(1)
             deselect_module(module)
             break
@@ -196,7 +230,10 @@ def solve_modules(modules, solver_funcs, side_features):
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2
     log("Loading classifier model...")
-    MODEL = classifier_util.load_from_file("../resources/trained_models/model")
+    #classifier_util.set_nn_config()
+    MODEL = module_classifier.load_from_file("../resources/trained_models/model")
+
+    SERIAL_MODEL = serial_classifier.load_from_file("../resources/trained_models/serial_model")
 
     log("Waiting for level selection...")
     log("Press S when a level has been selected.")
@@ -221,7 +258,8 @@ if __name__ == "__main__":
         solvers.solve_password, solvers.solve_morse
     ]
 
-    SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:])
+    SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], SERIAL_MODEL)
+    log(f"Side features: {SIDE_FEATURES}", verbosity_level=1)
     solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES)
     """
     cv2.namedWindow("Predictions")

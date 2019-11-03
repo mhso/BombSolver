@@ -3,6 +3,9 @@ import math
 import cv2
 import numpy as np
 import config
+import model.serial_classifier as classifier
+import model.classifier_util as classifier_util
+import model.dataset_util as dataset_util
 from debug import log
 
 def serial_bounding_box(img):
@@ -126,28 +129,50 @@ def rotate_masks(masks, alignment):
 
 def get_characters(img):
     image, contours, alignment = get_segmented_image(img)
+    masks = get_masked_images(image, contours)
+    masks = rotate_masks(masks, alignment)
+    return masks, alignment
+
+def reshape_masks(masks):
+    resized_masks = []
+    for mask in masks:
+        reshaped = mask.reshape(mask.shape + (1,))
+        padded = dataset_util.pad_image(reshaped)
+        resized = dataset_util.resize_img(padded, config.SERIAL_INPUT_DIM[1:])
+        repeated = np.repeat(resized.reshape(((1,) + config.SERIAL_INPUT_DIM[1:])), 3, axis=0)
+        resized_masks.append(repeated)
+    return np.array(resized_masks)
+
+def create_serial_string(predictions, alignment):
+    result = ""
+    for pred in predictions:
+        if alignment == 1:
+            result += classifier.LABELS[pred]
+        else:
+            result = classifier.LABELS[pred] + result
+    return result
+
+def get_serial_number(img, model):
+    masks, alignment = get_characters(img)
     if not alignment:
         print("ERROR: Could not determine alignment of serial number")
         return None
-    masks = get_masked_images(image, contours)
-    masks = rotate_masks(masks, alignment)
-    return masks
-
-def get_serial_number(img):
-    masks = get_characters(img)
-    # Predict stuff.
-    return masks # Return actual string.
+    masks = reshape_masks(masks)
+    for i, mask in enumerate(masks):
+        cv2.imwrite(f"../resources/test{i}.png", mask[0, :, :].reshape(config.SERIAL_INPUT_DIM[1:] + (1,)))
+    prediction = classifier.predict(model, masks)
+    best_pred = classifier_util.get_best_prediction(prediction)
+    return create_serial_string(best_pred, alignment) # Return actual string.
 
 if __name__ == '__main__':
-    FILES = glob("../resources/training_images/serial/images/*.png")
-    cv2.namedWindow("Test")
+    FILES = glob("../resources/training_images/serial/test/*.png")
+    log("Loading network...")
+    SERIAL_MODEL = classifier_util.load_from_file("../resources/trained_models/serial_model")
+    classifier.compile_model(SERIAL_MODEL)
     for file in FILES:
         image = cv2.imread(file, cv2.IMREAD_COLOR)
-        get_characters(image)
-        #cv2.imshow("Test", reee)
-        key = cv2.waitKey(0)
-        if key == ord('q'):
-            break
+        num = get_serial_number(image, SERIAL_MODEL)
+        print(num)
     """
     img = cv2.imread("../resources/training_images/serial/images/020.png", cv2.IMREAD_COLOR)
     masks = get_serial_number(img)

@@ -24,7 +24,7 @@ def get_nth_wire(wires, index, color=None):
         curr_index += 1
     return last_wire
 
-def solve_simple_wires(img, **kwargs):
+def solve_simple_wires(img, features):
     log("Solving Simple Wires...")
 
     h, w, c = img.shape
@@ -49,52 +49,57 @@ def solve_simple_wires(img, **kwargs):
                 print(f"Wire {i+1} is {Colors(j)}")
                 break
 
-    serial_odd = kwargs.get("last_serial_odd", None)
+    serial_odd = features.get("last_serial_odd", None)
     if serial_odd is None:
         return (False, "Serial number information not provided")
-
+    
     if num_wires == 3:
         last_wire = get_nth_wire(wire_hist, -1)
         if color_hist[Colors.Red.value] == 0: # There are no red wires.
-            return get_nth_wire(wire_hist, 2) # Cut second wire.
+            return get_nth_wire(wire_hist, 2), coords # Cut second wire.
         if wire_hist[last_wire] == Colors.White.value: # Last wire is white.
-            return get_nth_wire(wire_hist, -1) # Cut last wire
+            return get_nth_wire(wire_hist, -1), coords # Cut last wire
         if color_hist[Colors.Blue.value] > 1: # More than one blue wire.
-            return get_nth_wire(wire_hist, -1, Colors.Blue.value) # Cut last blue wire.
-        return get_nth_wire(wire_hist, -1) # Cut the last wire.
-    elif num_wires == 4: #TODO: Need to be able to read serial number to solve higher num of wires.
+            return get_nth_wire(wire_hist, -1, Colors.Blue.value), coords # Cut last blue wire.
+        return get_nth_wire(wire_hist, -1), coords # Cut the last wire.
+    elif num_wires == 4:
         if color_hist[Colors.Red.value] > 1 and serial_odd: # More than one red wire + serial number odd.
-            return get_nth_wire(wire_hist, -1, Colors.Red.value) # Cut last red wire.
+            print("Case 1")
+            return get_nth_wire(wire_hist, -1, Colors.Red.value), coords # Cut last red wire.
         last_wire = get_nth_wire(wire_hist, -1)
         # Last wire is yellow + no red wires.
-        if color_hist[last_wire] == Colors.Yellow.value and color_hist[Colors.Red.value] == 0:
-            return get_nth_wire(wire_hist, 0) # Cut the first wire.
+        if wire_hist[last_wire] == Colors.Yellow.value and color_hist[Colors.Red.value] == 0:
+            print("Case 2")
+            return get_nth_wire(wire_hist, 0), coords # Cut the first wire.
         if color_hist[Colors.Blue.value] == 1: # Exactly one blue wire.
-            return get_nth_wire(wire_hist, 0) # Cut the first wire.
+            print("Case 3")
+            return get_nth_wire(wire_hist, 0), coords # Cut the first wire.
         if color_hist[Colors.Yellow.value] > 1: # More than one yellow wire.
-            return get_nth_wire(wire_hist, -1, Colors.Red.value) # Cut last red wire.
-        return get_nth_wire(wire_hist, 1) # Cut the second wire.
+            print("Case 4")
+            return get_nth_wire(wire_hist, -1, Colors.Red.value), coords # Cut last red wire.
+        print("Case 5")
+        return get_nth_wire(wire_hist, 1), coords # Cut the second wire.
     elif num_wires == 5:
         last_wire = get_nth_wire(wire_hist, -1)
         # Last wire is black + serial number odd.
         if wire_hist[last_wire] == Colors.Black.value and serial_odd:
-            return get_nth_wire(wire_hist, 3) # Cut the fourth wire.
+            return get_nth_wire(wire_hist, 3), coords # Cut the fourth wire.
         # One red wire + more than one yellow.
         if color_hist[Colors.Red.value] == 1 and color_hist[Colors.Yellow.value] > 1:
-            return get_nth_wire(wire_hist, 0) # Cut the first wire.
+            return get_nth_wire(wire_hist, 0), coords # Cut the first wire.
         if color_hist[Colors.Black.value] == 0: # No black wires.
-            return get_nth_wire(wire_hist, 1) # Cut the second wire.
-        return get_nth_wire(wire_hist, 0) # Cut the first wire.
+            return get_nth_wire(wire_hist, 1), coords # Cut the second wire.
+        return get_nth_wire(wire_hist, 0), coords # Cut the first wire.
     elif num_wires == 6:
         if color_hist[Colors.Yellow.value] == 0 and serial_odd: # No yellow wires + serial number odd.
-            return get_nth_wire(wire_hist, 2) # Cut the third wire.
+            return get_nth_wire(wire_hist, 2), coords # Cut the third wire.
         # One yellow + more than one white.
         if color_hist[Colors.Yellow.value] == 1 and color_hist[Colors.White.value] > 1:
-            return get_nth_wire(wire_hist, 3) # Cut the fourth wire.
+            return get_nth_wire(wire_hist, 3), coords # Cut the fourth wire.
         if color_hist[Colors.Red.value] == 0: # No red wires.
-            return get_nth_wire(wire_hist, -1) # Cut last wire.
-        return get_nth_wire(wire_hist, 3) # Cut the fourth wire.
-    return (False, "Invalid number of wires (invalid number of wires)")
+            return get_nth_wire(wire_hist, -1), coords # Cut last wire.
+        return get_nth_wire(wire_hist, 3), coords # Cut the fourth wire.
+    return (-1, "Invalid number of wires (invalid number of wires)")
 
 def solve_button(img):
     log("Solving Button...")

@@ -12,8 +12,11 @@ NUM_IMAGES = len(glob("../resources/training_images/serial/*.png"))
 INDEX = NUM_IMAGES
 for file in FILES:
     img = cv2.imread(file, cv2.IMREAD_COLOR)
-    masks = serial_number.get_characters(img)
+    masks, _ = serial_number.get_characters(img)
     for mask in masks:
+        if mask is None:
+            print("MASK IS NONE :(")
+            exit(0)
         cv2.imwrite(f"../resources/training_images/serial/{INDEX:03d}.png", mask)
         INDEX += 1
     unlink(file)

@@ -1,5 +1,6 @@
 *.png
 .vscode
+/bin/
 /resources/labeled_images/
 /resources/training_images/
 /resources/models/
