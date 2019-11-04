@@ -54,16 +54,14 @@ MODEL = None
 FILE_PATH = "../resources/trained_models/serial_model"
 if classifier_util.model_exists(FILE_PATH) and "train" not in argv:
     log("Loading Neural Network from file...")
-    MODEL = classifier_util.load_from_file(FILE_PATH)
+    MODEL, _, _ = classifier.load_from_file(FILE_PATH)
     classifier.compile_model(MODEL)
 else:
     log("Building Neural Network model...")
-    MODEL = classifier.build_model()
+    MODEL, _, _ = classifier.build_model()
 
-    #classifier.save_as_image(model)
     log("Training network...")
     train_network(MODEL, x_train, y_train, x_test, y_test)
 
-if not classifier_util.model_exists(FILE_PATH):
-    log("Saving model to file...")
-    classifier_util.save_to_file(MODEL, FILE_PATH)
+log("Saving model to file...")
+classifier_util.save_to_file(MODEL, FILE_PATH)

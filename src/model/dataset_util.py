@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+from math import floor, ceil
 
 def extract_test_data(images, labels, output_dim):
     test_images = []
@@ -32,11 +33,13 @@ def pad_image(img):
     h, w, c = img.shape
     dif = abs(h - w)
     if h > w:
-        zeros = np.zeros((h, int(dif/2), c), dtype="uint8")
-        new_img = np.concatenate((zeros, img, zeros), 1)
+        left = np.zeros((h, ceil(dif/2), c), dtype="uint8")
+        right = np.zeros((h, floor(dif/2), c), dtype="uint8")
+        new_img = np.concatenate((left, img, right), 1)
     elif w > h:
-        zeros = np.zeros((int(dif/2), w, c), dtype="uint8")
-        new_img = np.concatenate((zeros, img, zeros), 0)
+        left = np.zeros((ceil(dif/2), w, c), dtype="uint8")
+        right = np.zeros((floor(dif/2), w, c), dtype="uint8")
+        new_img = np.concatenate((left, img, right), 0)
     return new_img
 
 def sample_data(images, labels, size):

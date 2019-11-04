@@ -5,7 +5,7 @@ VERBOSITY = 1
 INPUT_DIM = (3, 64, 64)
 SERIAL_INPUT_DIM = (3, 32, 32)
 
-OUTPUT_DIM = 39
+OUTPUT_DIM = 20
 SERIAL_OUTPUT_DIM = 36
 
 MAX_GPU_FRACTION = 0.4
@@ -33,48 +33,6 @@ EPOCHS_PER_BATCH = 5
 SERIAL_EPOCHS_PER_BATCH = 10
 
 VALIDATION_SPLIT = 0.3
-
-LABELS = [
-    "Nothing (Side)",
-    "Big battery",
-    "Small batteries",
-    "Serial number",
-    "Metal piece without parallel port",
-    "Parallel port",
-    "Lit SIG indicator",
-    "Unlit SIG indicator",
-    "Lit NSA indicator",
-    "Unlit NSA indicator",
-    "Lit BOB indicator",
-    "Unlit BOB indicator",
-    "Lit FRQ indicator",
-    "Lit SND indicator",
-    "Unlit SND indicator",
-    "Lit CLR indicator",
-    "Unlit CLR indicator",
-    "Lit CAR indicator",
-    "Unlit CAR indicator",
-    "Lit IND indicator",
-    "Lit MSA indicator",
-    "Unlit MSA indicator",
-    "Lit TRN indicator",
-    "Unlit TRN indicator",
-    "Lit FRK indicator",
-    "Unlit FRK indicator",
-    "Nothing (Front)",
-    "Timer",
-    "Wires",
-    "Button",
-    "Symbols",
-    "Simon Says",
-    "Wire Sequence",
-    "Complicated Wires",
-    "Memory Game",
-    "Who's On First?",
-    "Maze",
-    "Password",
-    "Morse"
-]
 
 # Image analysis specific
 SERIAL_MIN_RED = (110, 0, 0)

@@ -17,26 +17,7 @@ LABELS = [
     "Serial number",
     "Metal piece without parallel port",
     "Parallel port",
-    "Lit SIG indicator",
-    "Unlit SIG indicator",
-    "Lit NSA indicator",
-    "Unlit NSA indicator",
-    "Lit BOB indicator",
-    "Unlit BOB indicator",
-    "Lit FRQ indicator",
-    "Lit SND indicator",
-    "Unlit SND indicator",
-    "Lit CLR indicator",
-    "Unlit CLR indicator",
-    "Lit CAR indicator",
-    "Unlit CAR indicator",
-    "Lit IND indicator",
-    "Lit MSA indicator",
-    "Unlit MSA indicator",
-    "Lit TRN indicator",
-    "Unlit TRN indicator",
-    "Lit FRK indicator",
-    "Unlit FRK indicator",
+    "Indicator",
     "Nothing (Front)",
     "Timer",
     "Wires",
@@ -75,8 +56,8 @@ def compile_model(model):
                   metrics=["accuracy"])
 
 def build_model():
-    utils.set_nn_config()
-
+    sess = utils.get_nn_config()
+    graph = tf.Graph()
     inp = Input(config.INPUT_DIM)
 
     layer = inp
@@ -92,12 +73,13 @@ def build_model():
     model = Model(inputs=inp, outputs=out)
     compile_model(model)
     model._make_predict_function()
-    return model
+
+    return model, graph, sess
 
 def shape_input(inp):
     reshaped = inp
     if len(inp.shape) < 4:
-        reshaped = np.array([inp]).reshape((-1,)+config.INPUT_DIM)
+        reshaped = inp.reshape((1,)+config.INPUT_DIM)
     return reshaped
 
 def load_from_file(filename):
@@ -109,6 +91,10 @@ def load_from_file(filename):
             compile_model(model)
             return model, graph, sess
     return None
+
+def evaluate(model, inputs, expected_out):
+    score = model.evaluate(inputs, expected_out, verbose=0)
+    return (score[0], score[1])
 
 def predict(model, inp):
     with model[1].as_default():

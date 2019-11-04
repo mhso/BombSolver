@@ -11,8 +11,9 @@ from debug import log
 def train_network(model, train_images, train_labels, test_images, test_labels, steps=500):
     for i in range(steps):
         sample_images, sample_labels = dataset_util.sample_data(train_images, train_labels, config.MODULE_BATCH_SIZE)
-        result = classifier.train(MODEL, sample_images, sample_labels)
-        acc = calculate_accuracy(MODEL, test_images, test_labels)
+        result = classifier.train(model, sample_images, sample_labels)
+        acc = classifier.evaluate(model, test_images, test_labels)[1] * 100
+        #acc = calculate_accuracy(model, test_images, test_labels)
         model_acc = result['val_acc'][-1]*100
         model_loss = result['val_loss'][-1]
         save_string = ""
@@ -68,25 +69,11 @@ if classifier_util.model_exists(FILE_PATH) and "train" not in argv:
     classifier.compile_model(MODEL)
 else:
     log("Building Neural Network model...")
-    MODEL = classifier.build_model()
+    MODEL, _, _ = classifier.build_model()
 
     #classifier.save_as_image(model)
     log("Training network...")
     train_network(MODEL, train_images, train_labels, test_images, test_labels)
 
-if not classifier_util.model_exists(FILE_PATH):
-    log("Saving model to file...")
-    classifier_util.save_to_file(MODEL, FILE_PATH)
-
-"""
-if "test" in argv:
-    for i in range(test_images.shape[0]):
-        label = np.where(labels[i] == 1)[0]
-        max_index = -1
-        max_val = 0
-        predict = classifier.predict(MODEL, test_images[i])
-        predict_label = classifier.get_best_prediction(predict)[0]
-        print(f"Predicted: {predict_label} ({config.LABELS[predict_label]})")
-        img = cv2.cvtColor(test_images[i].reshape((64, 64, 3)).astype("uint8"), cv2.COLOR_BGR2RGB)
-        plot_prediction(cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA), predict[0])
-"""
+log("Saving model to file...")
+classifier_util.save_to_file(MODEL, FILE_PATH)

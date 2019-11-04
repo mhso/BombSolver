@@ -10,8 +10,8 @@ import model.classifier_util as utils
 LABELS = [str(x) for x in range(10)] + [chr(x) for x in range(97, 123)]
 
 def build_model():
-    utils.set_nn_config()
-
+    sess = utils.get_nn_config()
+    graph = Graph()
     inp = Input(config.SERIAL_INPUT_DIM)
 
     layer = utils.conv_layer(inp, 32, 3)
@@ -28,7 +28,7 @@ def build_model():
     compile_model(model)
     model._make_predict_function()
 
-    return model
+    return model, graph, sess
 
 def compile_model(model):
     model.compile(loss=keras.losses.categorical_crossentropy,

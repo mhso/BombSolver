@@ -4,6 +4,7 @@ from glob import glob
 import cv2
 import config
 import model.dataset_util as dataset_util
+from model.module_classifier import LABELS as MODULE_LABELS
 
 def label_img(img, label, data_type):
     path = f"../resources/labeled_images/{data_type}/{label}/"
@@ -58,7 +59,7 @@ for i, file in enumerate(FILES):
                 break
             key_val += chr(key)
         label = int(key_val)
-        label_desc = config.LABELS[label]
+        label_desc = MODULE_LABELS[label]
     os.unlink(file)
     label_img(img, label, DATA_TYPE)
     print(f"Labeled: {label} ({label_desc}) ({(i+1)}/{len(FILES)})",

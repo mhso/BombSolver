@@ -1,7 +1,7 @@
 from glob import glob
 import math
-import cv2
 import numpy as np
+import cv2
 import config
 import model.serial_classifier as classifier
 import model.classifier_util as classifier_util
@@ -90,7 +90,6 @@ def get_masked_images(image, contours):
 
     filtered_contours = []
     for c in contours:
-        circle = cv2.minEnclosingCircle(c)
         ps = math.pow(cv2.arcLength(c, True), 2)
         circularity = 0
         if ps > 0:
@@ -158,8 +157,6 @@ def get_serial_number(img, model):
         print("ERROR: Could not determine alignment of serial number")
         return None
     masks = reshape_masks(masks)
-    for i, mask in enumerate(masks):
-        cv2.imwrite(f"../resources/test{i}.png", mask[0, :, :].reshape(config.SERIAL_INPUT_DIM[1:] + (1,)))
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
     return create_serial_string(best_pred, alignment) # Return actual string.
@@ -167,20 +164,9 @@ def get_serial_number(img, model):
 if __name__ == '__main__':
     FILES = glob("../resources/training_images/serial/test/*.png")
     log("Loading network...")
-    SERIAL_MODEL = classifier_util.load_from_file("../resources/trained_models/serial_model")
+    SERIAL_MODEL = classifier.load_from_file("../resources/trained_models/serial_model")
     classifier.compile_model(SERIAL_MODEL)
     for file in FILES:
         image = cv2.imread(file, cv2.IMREAD_COLOR)
         num = get_serial_number(image, SERIAL_MODEL)
         print(num)
-    """
-    img = cv2.imread("../resources/training_images/serial/images/020.png", cv2.IMREAD_COLOR)
-    masks = get_serial_number(img)
-
-    cv2.namedWindow("Test")
-    for mask in masks:
-        cv2.imshow("Test", mask)
-        key = cv2.waitKey(0)
-        if key == ord('q'):
-            break
-    """
