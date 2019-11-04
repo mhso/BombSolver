@@ -1,5 +1,6 @@
-from time import sleep
+from time import sleep, time
 from sys import argv
+from math import ceil
 from numpy import array
 import cv2
 from debug import log
@@ -26,7 +27,7 @@ def start_level():
     win_util.click(int(SW - SW/2.6), int(SH - SH/3.3))
 
 def wait_for_light():
-    sleep(16)
+    sleep(15.3)
 
 def inspect_side(mx, my, sx, sy, sw, sh):
     win_util.mouse_move(mx, my)
@@ -143,6 +144,9 @@ def print_features(features):
     for feature, amount in enumerate(features):
         print(f"{module_classifier.LABELS[feature]} - {amount}")
 
+def get_time_remaining(time_started, minutes, seconds):
+    return ceil((minutes * 60 + seconds) - (time() - time_started))
+
 def serial_contains_vowel(serial_num):
     vowels = ["a", "e", "i", "u", "y"]
     for c in serial_num:
@@ -247,18 +251,19 @@ if __name__ == "__main__":
     log("Press S when a level has been selected.")
     sleep_until_start()
 
+    MINUTES = 8
+    SECONDS = 0
+
     if "skip" not in argv:
-        minutes, seconds = bomb_duration.get_bomb_duration(SERIAL_MODEL)
-        if len(minutes) != 1:
-            log(f"WARNING: Could not determine minutes from duration of bomb (len={len(minutes)}).")
-        if len(seconds) != 2:
-            log(f"WARNING: Could not determine seconds from duration of bomb (len={len(seconds)}).")
-        log(f"Bomb duration: {minutes} minute(s) & {seconds} seconds.")
+        MINUTES, SECONDS = bomb_duration.get_bomb_duration(SERIAL_MODEL)
+        log(f"Bomb duration: {MINUTES} minute(s) & {SECONDS} seconds.")
 
         start_level()
 
         log("Waiting for level to start...")
         wait_for_light()
+
+    TIME_STARTED = time()
 
     log("Inspecting bomb...")
     IMAGES = inspect_bomb()
@@ -275,7 +280,7 @@ if __name__ == "__main__":
 
     SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], SERIAL_MODEL)
     log(f"Side features: {SIDE_FEATURES}", verbosity_level=1)
-    solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES)
+    #solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES)
     """
     cv2.namedWindow("Predictions")
 
