@@ -6,15 +6,12 @@ import cv2
 from debug import log
 from model.grab_img import screenshot
 import windows_util as win_util
-import model.module_classifier as module_classifier
-import model.serial_classifier as serial_classifier
-import model.classifier_util as classifier_util
-import module_solvers as solvers
-import serial_number
-import bomb_duration
-import indicator
+from model import module_classifier, serial_classifier, classifier_util, dataset_util
+import solvers
+from features.serial_number import get_serial_number
+from features.bomb_duration import get_bomb_duration
+from features.indicator import get_indicator_features
 import config
-import model.dataset_util as dataset_util
 
 def sleep_until_start():
     while True:
@@ -148,7 +145,7 @@ def get_time_remaining(time_started, minutes, seconds):
     return ceil((minutes * 60 + seconds) - (time() - time_started))
 
 def serial_contains_vowel(serial_num):
-    vowels = ["a", "e", "i", "u", "y"]
+    vowels = ["A", "E", "I", "U", "Y"]
     for c in serial_num:
         if c in vowels:
             return True
@@ -162,18 +159,20 @@ def extract_serial_number_features(serial_num):
 
 def extract_side_features(sides, labels, serial_model):
     index = 0
-    features = {}
-    features["indicators"] = []
-    batteries = 0
+    features = {
+        "indicators" : [],
+        "parallel_port" : False,
+        "batteries" : 0
+    }
     for side in sides:
         for img in side:
             cv2_img = cv2.cvtColor(array(img), cv2.COLOR_RGB2BGR)
             if labels[index] == 1:
-                batteries += 1
+                features["batteries"] += 1
             elif labels[index] == 2:
-                batteries += 2
+                features["batteries"] += 2
             elif labels[index] == 3: # Serial number.
-                serial_num = serial_number.get_serial_number(cv2_img, serial_model)
+                serial_num = get_serial_number(cv2_img, serial_model)
                 if serial_num is None:
                     log(f"Serial number could not be determined.")
                     index += 1
@@ -186,11 +185,10 @@ def extract_side_features(sides, labels, serial_model):
             elif labels[index] == 5: # Parallel port.
                 features["parallel_port"] = True
             elif labels[index] == 6: # Indicator of some kind.
-                lit, text = indicator.get_indicator_features(cv2_img, serial_model)
+                lit, text = get_indicator_features(cv2_img, serial_model)
                 desc = "lit_" + text if lit else "unlit_" + text
                 features["indicators"].append(desc)
             index += 1
-    features["batteries"] = batteries
     return features
 
 def select_module(module):
@@ -222,13 +220,13 @@ def screenshot_module():
     return screenshot(x, y, 300, 300), x, y
 
 def solve_modules(modules, solver_funcs, side_features):
-    for module, label in enumerate(modules):
-        print(f"Module {module+1} is (maybe) {label} ({config.LABELS[label]})")
-        if label > 7 and label == 8:
+    for module, label in enumerate(modules[:6]):
+        if label > 8:
             select_module(module)
             SC, mod_x, mod_y = screenshot_module()
             SC = array(SC)
-            result, coords = solver_funcs[label-8](SC, side_features)
+        if label == 9 and False:
+            result, coords = solver_funcs[label-8].solve(SC, side_features)
             if result == -1:
                 log(coords)
                 continue
@@ -238,12 +236,14 @@ def solve_modules(modules, solver_funcs, side_features):
             win_util.click(mod_x + wire_x, mod_y + wire_y)
             sleep(1)
             deselect_module(module)
-            break
+        elif label == 10:
+            hold = solver_funcs[label-8].solve(SC, side_features)
+            log(f"Button, hold: {hold}")
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2
     log("Loading classifier model...")
-    MODEL = module_classifier.load_from_file("../resources/trained_models/model")
+    MODEL = module_classifier.load_from_file("../resources/trained_models/module_model")
 
     SERIAL_MODEL = serial_classifier.load_from_file("../resources/trained_models/serial_model")
 
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     SECONDS = 0
 
     if "skip" not in argv:
-        MINUTES, SECONDS = bomb_duration.get_bomb_duration(SERIAL_MODEL)
+        MINUTES, SECONDS = get_bomb_duration(SERIAL_MODEL)
         log(f"Bomb duration: {MINUTES} minute(s) & {SECONDS} seconds.")
 
         start_level()
@@ -271,15 +271,16 @@ if __name__ == "__main__":
     FEATURES, PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
 
     SOLVERS = [
-        solvers.solve_simple_wires, solvers.solve_button,
-        solvers.solve_symbols, solvers.solve_simon,
-        solvers.solve_wire_sequence, solvers.solve_complicated_wires,
-        solvers.solve_memory, solvers.solve_whos_first, solvers.solve_maze,
-        solvers.solve_password, solvers.solve_morse
+        solvers.wire_solver, solvers.button_solver,
+        solvers.symbols_solver, solvers.simon_solver,
+        solvers.wire_seQ_solver, solvers.compl_wires_solver,
+        solvers.memory_solver, solvers.whos_first_solver, solvers.maze_solver,
+        solvers.password_solver, solvers.morse_solver
     ]
 
     SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], SERIAL_MODEL)
     log(f"Side features: {SIDE_FEATURES}", verbosity_level=1)
+    log(f"Modules: {[module_classifier.LABELS[x] for x in PREDICTIONS[:12]]}", verbosity_level=1)
     #solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES)
     """
     cv2.namedWindow("Predictions")

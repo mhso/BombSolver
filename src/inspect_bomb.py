@@ -1,4 +1,3 @@
-from glob import glob
 from time import sleep
 from sys import argv
 import main

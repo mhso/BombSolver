@@ -1,6 +1,5 @@
 from enum import Enum
 from debug import log
-import windows_util as win_util
 import config
 
 def color_in_range(img, pixel, low, high):
@@ -24,7 +23,7 @@ def get_nth_wire(wires, index, color=None):
         curr_index += 1
     return last_wire
 
-def solve_simple_wires(img, features):
+def solve(img, features):
     log("Solving Simple Wires...")
 
     h, w, c = img.shape
@@ -119,33 +118,3 @@ def solve_simple_wires(img, features):
         print("Case 4")
         return get_nth_wire(wire_hist, 3), coords # Cut the fourth wire.
     return (-1, "Invalid number of wires (invalid number of wires)")
-
-def solve_button(img):
-    log("Solving Button...")
-
-def solve_symbols(img):
-    log("Solving Symbols...")
-
-def solve_simon(img):
-    log("Solving Simon Says...")
-
-def solve_wire_sequence(img):
-    log("Solving Wire Sequence...")
-
-def solve_complicated_wires(img):
-    log("Solving Complicated Wires...")
-
-def solve_memory(img):
-    log("Solving Memory Game...")
-
-def solve_whos_first(img):
-    log("Solving Who's On First?...")
-
-def solve_maze(img):
-    log("Solving Maze...")
-
-def solve_password(img):
-    log("Solving Password...")
-
-def solve_morse(img):
-    log("Solving Morse...")

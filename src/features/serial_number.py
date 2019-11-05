@@ -145,11 +145,13 @@ def reshape_masks(masks):
 def create_serial_string(predictions, alignment):
     result = ""
     for pred in predictions:
+        if classifier.LABELS[pred] == "b":
+            pred = 0
         if alignment == 1:
             result += classifier.LABELS[pred]
         else:
             result = classifier.LABELS[pred] + result
-    return result
+    return result.upper()
 
 def get_serial_number(img, model):
     masks, alignment = get_characters(img)

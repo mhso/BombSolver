@@ -9,18 +9,17 @@ import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import windows_util as win_util
 from debug import log
-from model.grab_img import screenshot
-
-def get_threshold(img):
-    gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
-    inverted = 255 - gray
-    thresh = cv2.threshold(inverted, 50, 255, cv2.THRESH_BINARY_INV)[1]
-    return thresh
 
 def indicator_bbox(img):
     a = np.where(img != 0)
     bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
     return bbox
+
+def get_threshold(img):
+    gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
+    inverted = 255 - gray
+    thresh = cv2.threshold(inverted, 52, 255, cv2.THRESH_BINARY_INV)[1]
+    return thresh
 
 def mid_bbox(bbox):
     return (bbox[0] + (bbox[2]/2), bbox[1] + (bbox[3]/2))
@@ -66,12 +65,12 @@ def get_masked_images(image, contours):
     masks = []
     curr_contours = []
     sub_mask = mask.copy()
-    for i, c in enumerate(filtered_contours):
+    for i, c in enumerate(contours):
         x, y, w, h = cv2.boundingRect(c)
         mid_y = y + (h/2)
         next_y = -1
-        if i < len(filtered_contours) - 1:
-            x2, y2, w2, h2 = cv2.boundingRect(filtered_contours[i+1])
+        if i < len(contours) - 1:
+            x2, y2, w2, h2 = cv2.boundingRect(contours[i+1])
             next_y = y2 + (h2/2)
         curr_contours.append(c)
         if next_y == -1 or abs(mid_y - next_y) > 5:
@@ -125,6 +124,7 @@ def determine_alignment(image, bbox, lit):
     if check_color(image, mid_x, top_y, lit):
         log("Indicator is right aligned.", 1)
         return -1
+    log("WARNING: Indicator alignment could not be determined!")
     return 0
 
 def rotate_masks(masks, alignment):
@@ -137,6 +137,9 @@ def rotate_masks(masks, alignment):
     return rotated
 
 def get_characters(image):
+    h, w = image.shape[:2]
+    edge_crop = 20
+    image = image[edge_crop:h-edge_crop, edge_crop:w-edge_crop, :]
     thresh, contours, bbox = get_segmented_image(image)
     masks, lit = get_masked_images(image, contours)
     alignment = determine_alignment(image, bbox, lit)
@@ -161,7 +164,7 @@ def get_indicator_features(image, model):
     masks = reshape_masks(masks)
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
-    return format_time([classifier.LABELS[p] for p in best_pred])
+    return lit, format_time([classifier.LABELS[p] for p in best_pred])
 
 def sleep_until_start():
     while True:
@@ -172,12 +175,14 @@ def sleep_until_start():
 if __name__ == '__main__':
     #sleep_until_start()
     cv2.namedWindow("Test")
-    image = cv2.imread("../resources/training_images/modules/015.png")
-    PATH = "../resources/training_images/timer/"
-    INDEX = len(glob(PATH+"*.png"))
-    masks = get_characters(image)
-    for mask in masks:
-        cv2.imshow("Test", mask)
-        key = cv2.waitKey(0)
-        if key == ord('q'):
-            break
+    FILES = glob("../resources/training_images/indicators/test/*.png")
+    for file in FILES:
+        image = cv2.imread(file)
+        PATH = "../resources/training_images/timer/"
+        INDEX = len(glob(PATH+"*.png"))
+        masks, lit = get_characters(image)
+        for mask in masks:
+            cv2.imshow("Test", mask)
+            key = cv2.waitKey(0)
+            if key == ord('q'):
+                exit(0)

@@ -20,10 +20,10 @@ def label_img(img, label, data_type):
             serial_path = "../resources/training_images/serial/images/"
             index = len(glob(serial_path + "*.png"))
             cv2.imwrite(f"{serial_path}{index:03d}.png", img)
-        elif label == 27:
-            timer_path = "../resources/training_images/timer/images/"
-            index = len(glob(timer_path + "*.png"))
-            cv2.imwrite(f"{timer_path}{index:03d}.png", img)
+        elif label == 6:
+            indicator_path = "../resources/training_images/indicators/images/"
+            index = len(glob(indicator_path + "*.png"))
+            cv2.imwrite(f"{indicator_path}{index:03d}.png", img)
         resized = dataset_util.resize_img(padded, (config.INPUT_DIM[1], config.INPUT_DIM[2]))
     elif data_type == "serial":
         resized = dataset_util.resize_img(padded, (config.SERIAL_INPUT_DIM[1], config.SERIAL_INPUT_DIM[2]))

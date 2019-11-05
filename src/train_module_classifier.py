@@ -18,7 +18,7 @@ def train_network(model, train_images, train_labels, test_images, test_labels, s
         model_loss = result['val_loss'][-1]
         save_string = ""
         if i % 10 == 0:
-            path = "../resources/trained_models/model"
+            path = "../resources/trained_models/module_model"
             classifier_util.save_to_file(model, path)
             save_string = " - Saving model to file..."
         print(f"Step {i+1}/{steps} - Real acc: {acc:.3f}% - "
@@ -62,7 +62,7 @@ train_images, train_labels, test_images, test_labels = dataset.load_dataset()
 log(f"{train_images.shape[0]} data points loaded.")
 
 MODEL = None
-FILE_PATH = "../resources/trained_models/model"
+FILE_PATH = "../resources/trained_models/module_model"
 if classifier_util.model_exists(FILE_PATH) and "train" not in argv:
     log("Loading Neural Network from file...")
     MODEL = classifier.load_from_file(FILE_PATH)

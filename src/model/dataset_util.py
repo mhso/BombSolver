@@ -16,8 +16,8 @@ def extract_test_data(images, labels, output_dim):
             i += 1
             label = np.where(labels[i] == 1)[0]
         curr_label += 1
-        test_labels.append(labels[i])
-        test_images.append(images[i])
+        test_labels.extend(labels[i[:3]])
+        test_images.extend(images[i[:3]])
         indexes.append(i)
     for index in reversed(indexes):
         train_images.pop(index)
