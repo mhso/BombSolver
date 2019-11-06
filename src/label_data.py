@@ -42,6 +42,7 @@ if len(FILES) == 0:
 cv2.namedWindow("Data labeling")
 for i, file in enumerate(FILES):
     img = cv2.imread(file, cv2.IMREAD_COLOR)
+    cv2.destroyWindow("Data labeling")
     cv2.imshow("Data labeling", img)
     key = cv2.waitKey(0)
     if key == 27: # Escape

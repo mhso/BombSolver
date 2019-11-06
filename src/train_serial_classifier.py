@@ -48,7 +48,8 @@ x_train, y_train, x_test, y_test = dataset.merge_datasets((x_train_l, y_train_l,
 """
 
 x_train, y_train, x_test, y_test = dataset.load_dataset()
-print(f"Loaded {len(x_train)} datapoints.")
+print(f"Loaded {len(x_train)} training datapoints.")
+print(f"Loaded {len(x_test)} testing datapoints.")
 
 MODEL = None
 FILE_PATH = "../resources/trained_models/serial_model"

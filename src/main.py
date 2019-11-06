@@ -1,13 +1,15 @@
 from time import sleep, time
 from sys import argv
-from math import ceil
+from math import floor
 from numpy import array
 import cv2
 from debug import log
 from model.grab_img import screenshot
 import windows_util as win_util
 from model import module_classifier, serial_classifier, classifier_util, dataset_util
-import solvers
+from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
+                     wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
+                     maze_solver, password_solver, morse_solver)
 from features.serial_number import get_serial_number
 from features.bomb_duration import get_bomb_duration
 from features.indicator import get_indicator_features
@@ -24,7 +26,7 @@ def start_level():
     win_util.click(int(SW - SW/2.6), int(SH - SH/3.3))
 
 def wait_for_light():
-    sleep(15.3)
+    sleep(16.5)
 
 def inspect_side(mx, my, sx, sy, sw, sh):
     win_util.mouse_move(mx, my)
@@ -142,7 +144,7 @@ def print_features(features):
         print(f"{module_classifier.LABELS[feature]} - {amount}")
 
 def get_time_remaining(time_started, minutes, seconds):
-    return ceil((minutes * 60 + seconds) - (time() - time_started))
+    return floor((minutes * 60 + seconds) - (time() - time_started))
 
 def serial_contains_vowel(serial_num):
     vowels = ["A", "E", "I", "U", "Y"]
@@ -153,7 +155,11 @@ def serial_contains_vowel(serial_num):
 
 def extract_serial_number_features(serial_num):
     features = {}
-    features["last_serial_odd"] = (int(serial_num[-1])) % 2 == 1
+    try:
+        features["last_serial_odd"] = (int(serial_num[-1])) % 2 == 1
+    except ValueError:
+        log(f"WARNING: Misread last character of serial number.", 1)
+        features["last_serial_odd"] = False
     features["contains_vowel"] = serial_contains_vowel(serial_num)
     return features
 
@@ -219,26 +225,49 @@ def screenshot_module():
     y = int(SH*0.36)
     return screenshot(x, y, 300, 300), x, y
 
-def solve_modules(modules, solver_funcs, side_features):
+def release_mouse_at(digit, duration, x, y):
+    time_started, minutes, seconds = duration
+    while True:
+        remaining = get_time_remaining(time_started, minutes, seconds)
+        sec_str = str(remaining % 60)
+        digits = (remaining // 60, int(sec_str[0]), int(sec_str[1]))
+        if digit in digits:
+            win_util.mouse_up(x, y)
+            break
+        sleep(1)
+
+def solve_modules(modules, solver_modules, side_features, serial_model, duration):
     for module, label in enumerate(modules[:6]):
         if label > 8:
+            mod_label = label-9
             select_module(module)
             SC, mod_x, mod_y = screenshot_module()
-            SC = array(SC)
-        if label == 9 and False:
-            result, coords = solver_funcs[label-8].solve(SC, side_features)
-            if result == -1:
-                log(coords)
-                continue
-            log(f"Cut wire at {result}")
-            wire_y, wire_x = coords[result]
-            sleep(0.5)
-            win_util.click(mod_x + wire_x, mod_y + wire_y)
-            sleep(1)
+            cv2_img = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
+            if label == 9 and False:
+                result, coords = solver_modules[mod_label].solve(cv2_img, side_features)
+                if result == -1:
+                    log(coords)
+                    continue
+                log(f"Cut wire at {result}")
+                wire_y, wire_x = coords[result]
+                sleep(0.5)
+                win_util.click(mod_x + wire_x, mod_y + wire_y)
+            elif label == 10:
+                hold = solver_modules[mod_label].solve(cv2_img, side_features, serial_model)
+                log(f"Button, hold: {hold}")
+                button_x, button_y = mod_x + 125, mod_y + 175
+                if not hold:
+                    win_util.click(button_x, button_y)
+                    sleep(1)
+                else:
+                    win_util.mouse_down(button_x, button_y)
+                    sleep(1)
+                    pixel = (184, 255)
+                    release_time = solver_modules[mod_label].get_release_time(cv2_img, pixel)
+                    log(f"Release button at {release_time}")
+                    release_mouse_at(release_time, duration, button_x, button_y)
+
             deselect_module(module)
-        elif label == 10:
-            hold = solver_funcs[label-8].solve(SC, side_features)
-            log(f"Button, hold: {hold}")
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2
@@ -271,31 +300,14 @@ if __name__ == "__main__":
     FEATURES, PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
 
     SOLVERS = [
-        solvers.wire_solver, solvers.button_solver,
-        solvers.symbols_solver, solvers.simon_solver,
-        solvers.wire_seQ_solver, solvers.compl_wires_solver,
-        solvers.memory_solver, solvers.whos_first_solver, solvers.maze_solver,
-        solvers.password_solver, solvers.morse_solver
+        wire_solver, button_solver,
+        symbols_solver, simon_solver,
+        wire_seq_solver, compl_wires_solver,
+        memory_solver, whos_first_solver, maze_solver,
+        password_solver, morse_solver
     ]
 
     SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], SERIAL_MODEL)
     log(f"Side features: {SIDE_FEATURES}", verbosity_level=1)
     log(f"Modules: {[module_classifier.LABELS[x] for x in PREDICTIONS[:12]]}", verbosity_level=1)
-    #solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES)
-    """
-    cv2.namedWindow("Predictions")
-
-    label = 0
-    for side in SIDE_PARTITIONS:
-        for img in side:
-            pred_label = PREDICTIONS[label]
-            print(f"Predicted: {pred_label} ({config.LABELS[pred_label]})")
-            img = cv2.cvtColor(array(img, dtype="uint8"), cv2.COLOR_RGB2BGR)
-            cv2.imshow("Predictions", img)
-            label += 1
-            key = cv2.waitKey(0)
-            if key == ord('q'):
-                exit(0)
-
-    print_features(FEATURES)
-    """
+    solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES, SERIAL_MODEL, (TIME_STARTED, MINUTES, SECONDS))

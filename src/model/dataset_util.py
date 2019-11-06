@@ -1,8 +1,8 @@
+from math import floor, ceil
 import numpy as np
 import cv2
-from math import floor, ceil
 
-def extract_test_data(images, labels, output_dim):
+def extract_test_data(images, labels, output_dim, cases_per_label=1):
     test_images = []
     test_labels = []
     indexes = []
@@ -10,15 +10,15 @@ def extract_test_data(images, labels, output_dim):
     train_labels = [y for y in labels]
     i = 0
     curr_label = 0
-    while len(test_images) < output_dim:
+    while len(test_images) < output_dim * cases_per_label:
         label = np.where(labels[i] == 1)[0]
         while label < curr_label:
             i += 1
             label = np.where(labels[i] == 1)[0]
         curr_label += 1
-        test_labels.extend(labels[i[:3]])
-        test_images.extend(images[i[:3]])
-        indexes.append(i)
+        test_labels.extend(labels[i:i+cases_per_label])
+        test_images.extend(images[i:i+cases_per_label])
+        indexes.extend([i+x for x in range(cases_per_label)])
     for index in reversed(indexes):
         train_images.pop(index)
         train_labels.pop(index)

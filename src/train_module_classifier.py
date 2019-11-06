@@ -1,6 +1,5 @@
 from sys import argv
 import numpy as np
-import cv2
 import model.module_classifier as classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util

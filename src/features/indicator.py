@@ -156,7 +156,7 @@ def reshape_masks(masks):
         resized_masks.append(repeated)
     return np.array(resized_masks)
 
-def format_time(prediction):
+def format_label(prediction):
     return prediction[0] + prediction[1] + prediction[2]
 
 def get_indicator_features(image, model):
@@ -164,7 +164,7 @@ def get_indicator_features(image, model):
     masks = reshape_masks(masks)
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
-    return lit, format_time([classifier.LABELS[p] for p in best_pred])
+    return lit, format_label([classifier.LABELS[p] for p in best_pred])
 
 def sleep_until_start():
     while True:

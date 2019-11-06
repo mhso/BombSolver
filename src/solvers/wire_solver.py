@@ -3,9 +3,9 @@ from debug import log
 import config
 
 def color_in_range(img, pixel, low, high):
-    red = img[:, :, 0]
+    blue = img[:, :, 0]
     green = img[:, :, 1]
-    blue = img[:, :, 2]
+    red = img[:, :, 2]
     return (red[pixel] >= low[0] and green[pixel] >= low[1]
             and blue[pixel] >= low[2] and red[pixel] <= high[0]
             and green[pixel] <= high[1] and blue[pixel] <= high[2])

@@ -140,6 +140,13 @@ def get_button_features(image, model):
             return "Abort", color
         return "Press", color
 
+def get_strip_color(img, pixel):
+    colors = config.BUTTON_COLOR_RANGE
+    for i, (low, high) in enumerate(colors):
+        if color_in_range(img, pixel, low, high):
+            return i
+    return -1
+
 def sleep_until_start():
     while True:
         if win_util.s_pressed():

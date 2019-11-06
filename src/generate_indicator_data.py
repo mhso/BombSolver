@@ -1,7 +1,7 @@
 from os import unlink
 from glob import glob
 import cv2
-import indicator
+from features import indicator
 from debug import log
 import config
 
