@@ -50,10 +50,7 @@ def solve(img, features):
 
     serial_odd = features.get("last_serial_odd", None)
     if serial_odd is None:
-        return (False, "Serial number information not provided")
-
-    print(f"Color hist: {color_hist}")
-    print(f"Wire hist: {wire_hist}")
+        return (-1, "Serial number information not provided")
 
     if num_wires == 3:
         print("3 Wires")

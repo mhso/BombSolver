@@ -43,23 +43,18 @@ def inspect_bomb():
     sleep(0.5)
     # Inspect front of bomb.
     front_img = screenshot(460, 220, 1000, 640)
-    front_img.save("../front.png")
     sleep(0.2)
     # Rotate bomb.
     win_util.mouse_down(mid_x, mid_y, btn="right")
     sleep(0.2)
     # Inspect right side.
     right_img = inspect_side(SW - int(SW / 2.74), mid_y + int(mid_y / 8), 755, 60, 480, 900)
-    right_img.save("../left.png")
     # Inspect left side.
     left_img = inspect_side(int(SW / 2.76), mid_y + int(mid_y / 8), 755, 60, 480, 900)
-    left_img.save("../right.png")
     # Inspect top side.
     top_img = inspect_side(int(SW / 2.75), SH, 720, 0, 480, SH)
-    top_img.save("../top.png")
     # Inspect bottom side.
     bottom_img = inspect_side(int(SW / 2.75), 0, 720, 0, 480, SH)
-    bottom_img.save("../bot.png")
     # Inspect back of bomb.
     win_util.mouse_up(mid_x, mid_y, btn="right")
     sleep(0.5)
@@ -70,7 +65,6 @@ def inspect_bomb():
     win_util.mouse_down(mid_x, mid_y, btn="right")
     sleep(0.5)
     back_img = inspect_side(SW - int(SW / 4.4), mid_y + (mid_y // 9), 460, 220, 1000, 640)
-    back_img.save("../back.png")
     sleep(0.2)
     win_util.mouse_up(mid_x, mid_y, btn="right")
     return (back_img, front_img, left_img, right_img, top_img, bottom_img)
@@ -243,7 +237,7 @@ def solve_modules(modules, solver_modules, side_features, serial_model, duration
             select_module(module)
             SC, mod_x, mod_y = screenshot_module()
             cv2_img = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
-            if label == 9 and False:
+            if label == 9:
                 result, coords = solver_modules[mod_label].solve(cv2_img, side_features)
                 if result == -1:
                     log(coords)
@@ -254,7 +248,7 @@ def solve_modules(modules, solver_modules, side_features, serial_model, duration
                 win_util.click(mod_x + wire_x, mod_y + wire_y)
             elif label == 10:
                 hold = solver_modules[mod_label].solve(cv2_img, side_features, serial_model)
-                log(f"Button, hold: {hold}")
+                log(f"Hold button: {hold}")
                 button_x, button_y = mod_x + 125, mod_y + 175
                 if not hold:
                     win_util.click(button_x, button_y)

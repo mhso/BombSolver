@@ -1,6 +1,6 @@
 import keras
 from keras.layers import Dense, Dropout, Flatten, Input
-from keras.layers import Conv2D, MaxPooling2D
+from keras.layers import MaxPooling2D, Activation
 from keras.models import Model, load_model
 from keras.optimizers import SGD
 from tensorflow import Graph

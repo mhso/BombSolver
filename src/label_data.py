@@ -28,6 +28,10 @@ def label_img(img, label, data_type):
     elif data_type == "serial":
         resized = dataset_util.resize_img(padded, (config.SERIAL_INPUT_DIM[1], config.SERIAL_INPUT_DIM[2]))
     cv2.imwrite(name, resized)
+    new_len = len(glob(path + "*.png"))
+    if new_len == img_index:
+        return False
+    return True
 
 if len(argv) == 1:
     print("Need to specify data type!")
@@ -61,7 +65,10 @@ for i, file in enumerate(FILES):
             key_val += chr(key)
         label = int(key_val)
         label_desc = MODULE_LABELS[label]
+    success = label_img(img, label, DATA_TYPE)
+    if not success:
+        print("ERROR: Image overwritten!")
+        break
     os.unlink(file)
-    label_img(img, label, DATA_TYPE)
     print(f"Labeled: {label} ({label_desc}) ({(i+1)}/{len(FILES)})",
           flush=True)

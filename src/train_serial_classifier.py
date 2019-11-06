@@ -12,7 +12,7 @@ import cv2
 def calculate_accuracy(model, test_x, test_y):
     return classifier.evaluate(model, test_x, test_y)[1] * 100
 
-def train_network(model, train_x, train_y, test_x, test_y, steps=300):
+def train_network(model, train_x, train_y, test_x, test_y, steps=500):
     for i in range(steps):
         sample_images, sample_labels = dataset_util.sample_data(train_x, train_y, config.SERIAL_BATCH_SIZE)
         result = classifier.train(MODEL, sample_images, sample_labels)
