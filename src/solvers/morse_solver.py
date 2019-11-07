@@ -1,4 +1,6 @@
 from time import time, sleep
+from numpy import array
+import cv2
 
 LETTERS = {
     ".-"    : "a",
@@ -29,48 +31,66 @@ LETTERS = {
     "--.."  : "z"
 }
 
-FREQUENCIES = [ # Indexing is done using .find.
-    "shell", "halls", "slick", "trick", "boxes",
-    "leaks", "strobe", "bistro", "flick",
-    "bombs", "break", "brick", "steak", "steak",
-    "sting", "vector", "beats"
+WORDS = [ # Indexing is done using WORDS.index().
+    "shell", "halls", "slick", "trick",
+    "boxes", "leaks", "strobe", "bistro",
+    "flick", "bombs", "break", "brick",
+    "steak", "sting", "vector", "beats"
 ]
 
-def is_lit(pixel):
-    lit = ((20, 170, 170), (50, 255, 255)) # TODO: Investigate actual value.
-    blue = pixel[:, :, 0]
-    green = pixel[:, :, 1]
-    red = pixel[:, :, 2]
-    if (red[pixel] >= lit[2] and green[pixel] >= lit[1]
-            and blue[pixel] >= lit[0] and red[pixel] <= lit[2]
-            and green[pixel] <= lit[1] and blue[pixel] <= lit[0]):
-        return True
-    return False
+FREQUENCIES = [
+    "3.505", "3.515", "3.522", "3.532",
+    "3.535", "3.542", "3.545", "3.552",
+    "3.555", "3.565", "3.572", "3.575",
+    "3.582", "3.592", "3.595", "3.600"
+]
 
-def solve(img):
-    pixel = (30, 50) # Fix dis.
-    unlit = ((30, 50, 120), (60, 75, 150)) # Actual = (40, 61, 133).
+def is_lit(pixel, rgb):
+    lit_low = (40, 180, 180)
+    lit_high = (100, 255, 255)
+    red, green, blue = rgb
+    return (red[pixel] >= lit_low[2] and green[pixel] >= lit_low[1]
+            and blue[pixel] >= lit_low[0] and red[pixel] <= lit_high[2]
+            and green[pixel] <= lit_high[1] and blue[pixel] <= lit_high[0])
 
-    dot_pause = 0.5 # TODO: Fix these variables.
-    dash_pause = 1
-    letter_pause = 2
-    word_pause = 3
-    for i in range(2): # Run twice to ensure the whole sequence of letters are recorded.
-        lit = is_lit(pixel)
+def split_colors(img):
+    blue = img[:, :, 0]
+    green = img[:, :, 1]
+    red = img[:, :, 2]
+    return (red, green, blue)
+
+def solve(img, screenshot_func):
+    pixel = (43, 108)
+    rgb = split_colors(img)
+
+    dot_pause = 0.1 # 15 frames = 0.25 seconds.
+    dash_pause = 0.6 # 47 frames ~ 0.75 seconds.
+    letter_pause = 1 # 63 frames ~ 1 second
+    word_pause = 2.5 # 194 frames ~ 3.3 seconds
+    sleep_duration = 0.05
+    duration = 0
+    for _ in range(2): # Run twice to ensure the whole sequence of letters are recorded.
+        lit = is_lit(pixel, rgb)
         checkpoint = time()
         letters = ""
         symbols = ""
         while True:
-            sleep(0.05)
-            if is_lit(pixel) != lit: # Check if light has changed state.
+            sleep(sleep_duration)
+            sc = array(screenshot_func())
+            rgb = split_colors(cv2.cvtColor(sc, cv2.COLOR_RGB2BGR)) # Grab new image.
+
+            if is_lit(pixel, rgb) != lit: # Check if light has changed state.
                 lit = not lit
                 if lit:
                     duration = time() - checkpoint # Record length of gap.
                     checkpoint = time() # Record time of light being lit.
 
                     if duration >= word_pause:
+                        letters += LETTERS[symbols]
+                        print("=== END OF WORD ===")
                         break
                     if duration >= letter_pause:
+                        print("--- END OF LETTER ---")
                         letters += LETTERS[symbols]
                         symbols = ""
                 else:
@@ -78,8 +98,13 @@ def solve(img):
                     checkpoint = time() # Record time of light being unlit.
 
                     if duration >= dash_pause:
+                        print("DASH")
                         symbols += "-"
                     elif duration >= dot_pause:
+                        print("DOT")
                         symbols += "."
 
-    return FREQUENCIES.index(letters) # Return amount of times to press morse button.
+    print(f"Word: {letters}")
+    # Return amount of times to press morse button.
+    presses = WORDS.index(letters)
+    return presses, FREQUENCIES[presses]

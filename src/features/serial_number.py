@@ -46,10 +46,10 @@ def determine_alignment(img, bbox):
     min_y, max_y, min_x, max_x = bbox
     offset_x = img.shape[1] // 12
     if scan_for_red(img, min_x - offset_x):
-        log("Serial number is left aligned.", 1)
+        log("Serial number is left aligned.", config.LOG_DEBUG)
         return 1 # Left alignment.
     elif scan_for_red(img, max_x + offset_x):
-        log("Serial number is right aligned.", 1)
+        log("Serial number is right aligned.", config.LOG_DEBUG)
         return -1
     return 0
 
@@ -165,7 +165,6 @@ def get_serial_number(img, model):
 
 if __name__ == '__main__':
     FILES = glob("../resources/training_images/serial/test/*.png")
-    log("Loading network...")
     SERIAL_MODEL = classifier.load_from_file("../resources/trained_models/serial_model")
     classifier.compile_model(SERIAL_MODEL)
     for file in FILES:

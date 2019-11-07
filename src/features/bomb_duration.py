@@ -120,24 +120,3 @@ def get_bomb_duration(model):
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
     return format_time([classifier.LABELS[p] for p in best_pred])
-
-def sleep_until_start():
-    while True:
-        if win_util.s_pressed():
-            break
-        sleep(0.1)
-
-if __name__ == '__main__':
-    sleep_until_start()
-    cv2.namedWindow("Test")
-    masks = get_characters()
-    PATH = "../resources/training_images/timer/"
-    INDEX = len(glob(PATH+"*.png"))
-    for mask in masks:
-        #cv2.imshow("Test", mask)
-        #key = cv2.waitKey(0)
-        #if key == ord('q'):
-        #    break
-        cv2.imwrite(f"{PATH}{INDEX:03d}.png", mask)
-        print("Saved timer image.")
-        INDEX += 1

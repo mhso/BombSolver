@@ -1,5 +1,8 @@
+from glob import glob
 from time import sleep
+from features import bomb_duration
 import windows_util as win_util
+import cv2
 
 def sleep_until_start():
     while True:
@@ -7,14 +10,11 @@ def sleep_until_start():
             break
         sleep(0.1)
 
-def screenshot_module():
-    SW, SH = win_util.get_screen_size()
-    x = int(SW * 0.43)
-    y = int(SH*0.36)
-    return x, y
-
 sleep_until_start()
-
-x, y = screenshot_module()
-
-win_util.click(x+125, y+175)
+masks = bomb_duration.get_characters()
+PATH = "../resources/training_images/timer/"
+INDEX = len(glob(PATH+"*.png"))
+for mask in masks:
+    cv2.imwrite(f"{PATH}{INDEX:03d}.png", mask)
+    print("Saved timer image.")
+    INDEX += 1

@@ -10,16 +10,26 @@ import model.dataset_util as dataset_util
 import windows_util as win_util
 from debug import log
 
+def bbox_thing(img):
+    a = np.where(np.any(img[:, :, 2].any() > 150) and np.any(img[:, :, 2] < 180))
+    bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
+    return bbox
+
 def indicator_bbox(img):
     a = np.where(img != 0)
     bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
     return bbox
 
 def get_threshold(img):
-    gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
+    copy = img.copy()
+    gray = cv2.cvtColor(copy, cv2.COLOR_BGR2GRAY)
     inverted = 255 - gray
-    thresh = cv2.threshold(inverted, 52, 255, cv2.THRESH_BINARY_INV)[1]
-    return thresh
+    thresh = cv2.Canny(gray, 140, 255)
+    bbox = indicator_bbox(thresh)
+    min_y, max_y, min_x, max_x = bbox
+    inverted = inverted[min_y:max_y, min_x:max_x]
+    thresh = cv2.threshold(inverted, 50, 255, cv2.THRESH_BINARY_INV)[1]
+    return thresh, bbox
 
 def mid_bbox(bbox):
     return (bbox[0] + (bbox[2]/2), bbox[1] + (bbox[3]/2))
@@ -42,10 +52,7 @@ def largest_bounding_rect(contours):
     return (min_x, min_y, max_x, max_y)
 
 def get_segmented_image(image):
-    thresh = get_threshold(image)
-    bbox = indicator_bbox(thresh)
-    min_y, max_y, min_x, max_x = bbox
-    thresh = thresh[min_y:max_y, min_x:max_x]
+    thresh, bbox = get_threshold(image)
     _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     return thresh, contours, bbox # alignment.
@@ -53,14 +60,7 @@ def get_segmented_image(image):
 def get_masked_images(image, contours):
     mask = np.zeros(image.shape[:2])
 
-    filtered_contours = []
-    for c in contours:
-        ps = math.pow(cv2.arcLength(c, True), 2)
-        circularity = 0
-        if ps > 0:
-            circularity = (4*math.pi*cv2.contourArea(c))/ps
-        if circularity > 0.08:
-            filtered_contours.append(c)
+    contours.sort(key=lambda c: cv2.boundingRect(c)[1])
 
     masks = []
     curr_contours = []
@@ -81,31 +81,27 @@ def get_masked_images(image, contours):
             masks.append(cropped)
             sub_mask = mask.copy()
 
-    lit = len(masks) > 3
+    filtered_masks = []
+    for mask in masks:
+        if mask.shape[0] > 2 and mask.shape[1] > 2:
+            filtered_masks.append(mask)
 
-    if lit: # Remove the lit indicator blob.
-        log("Indicator is lit", 1)
+    while len(filtered_masks) > 3:
         index = 0
         max_w = 0
-        for i, mask in enumerate(masks):
+        for i, mask in enumerate(filtered_masks):
             if mask.shape[0] > max_w:
                 max_w = mask.shape[0]
                 index = i
-        masks.pop(index)
-    else:
-        log("Indicator is not lit", 1)
+        filtered_masks.pop(index)
 
-    return masks, lit
+    return filtered_masks
 
-def check_color(image, x, y, lit):
+def check_color(image, x, y):
     h, w = image.shape[:2]
     if y >= h or y < 0:
         return False
-    unlit_min = (25, 25, 25)
-    unlit_max = (45, 45, 45)
-    lit_min = (230, 230, 230)
-    lit_max = (255, 255, 255)
-    min_c, max_c = (lit_min, lit_max) if lit else (unlit_min, unlit_max)
+    min_c, max_c = ((25, 25, 25), (45, 45, 45))
     blue = image[:, :, 0]
     green = image[:, :, 1]
     red = image[:, :, 2]
@@ -115,16 +111,17 @@ def check_color(image, x, y, lit):
             and green[pixel] <= max_c[1] and blue[pixel] <= max_c[2])
 
 def determine_alignment(image, bbox, lit):
-    mid_x = (bbox[3] + bbox[2]) // 2
-    bot_y = bbox[1]-10 if lit else bbox[1]+60
-    top_y = bbox[0]+10 if lit else bbox[0]-60
-    if check_color(image, mid_x, bot_y, lit): # Left aligned.
-        log("Indicator is left aligned.", 1)
-        return 1
-    if check_color(image, mid_x, top_y, lit):
-        log("Indicator is right aligned.", 1)
-        return -1
-    log("WARNING: Indicator alignment could not be determined!")
+    if lit:
+        return lit
+    mid_x = (bbox[2] + bbox[3]) // 2
+    q1_x = (bbox[2] + mid_x) // 2
+    q3_x = mid_x + q1_x
+    x_coords = [q1_x, mid_x, q3_x]
+    y_coords = [bbox[1]-30, bbox[1]-60, bbox[0]+30, bbox[0]+60]
+    for x in x_coords:
+        for i, y in enumerate(y_coords):
+            if check_color(image, x, y):
+                return 1 if i < 2 else -1
     return 0
 
 def rotate_masks(masks, alignment):
@@ -136,15 +133,34 @@ def rotate_masks(masks, alignment):
             rotated.append(cv2.rotate(mask, cv2.ROTATE_90_CLOCKWISE))
     return rotated
 
+def indicator_is_lit(image):
+    h, w = image.shape[:2]
+    offsets = [30, 60]
+    for offset in offsets:
+        if image[h-offset, w//2] > 240:
+            return 1
+        if image[offset, w//2] > 240:
+            return -1
+    return 0
+
 def get_characters(image):
     h, w = image.shape[:2]
-    edge_crop = 20
-    image = image[edge_crop:h-edge_crop, edge_crop:w-edge_crop, :]
     thresh, contours, bbox = get_segmented_image(image)
-    masks, lit = get_masked_images(image, contours)
+    gray = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2GRAY)
+    lit = indicator_is_lit(gray[bbox[0] : bbox[1], bbox[2] : bbox[3]])
+    log(f"Indicator is {'lit' if lit else 'not lit'}", config.LOG_DEBUG)
+    masks = get_masked_images(image, contours)
+    if len(masks) != 3:
+        log(f"WARNING: Length of indicator masks != 3 (len={len(masks)}).", config.LOG_WARNING)
     alignment = determine_alignment(image, bbox, lit)
+    if not alignment:
+        log("WARNING: Indicator alignment could not be determined!", config.LOG_WARNING)
+    else:
+        log(f"Indicator is {'left' if alignment == 1 else 'right'} aligned.", config.LOG_DEBUG)
     masks = rotate_masks(masks, alignment)
-    return masks, lit
+    if alignment == 1:
+        masks.reverse()
+    return masks, bool(lit)
 
 def reshape_masks(masks):
     resized_masks = []
@@ -171,18 +187,3 @@ def sleep_until_start():
         if win_util.s_pressed():
             break
         sleep(0.1)
-
-if __name__ == '__main__':
-    #sleep_until_start()
-    cv2.namedWindow("Test")
-    FILES = glob("../resources/training_images/indicators/test/*.png")
-    for file in FILES:
-        image = cv2.imread(file)
-        PATH = "../resources/training_images/timer/"
-        INDEX = len(glob(PATH+"*.png"))
-        masks, lit = get_characters(image)
-        for mask in masks:
-            cv2.imshow("Test", mask)
-            key = cv2.waitKey(0)
-            if key == ord('q'):
-                exit(0)

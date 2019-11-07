@@ -152,7 +152,7 @@ def extract_serial_number_features(serial_num):
     try:
         features["last_serial_odd"] = (int(serial_num[-1])) % 2 == 1
     except ValueError:
-        log(f"WARNING: Misread last character of serial number.", 1)
+        log(f"WARNING: Misread last character of serial number.", config.LOG_WARNING)
         features["last_serial_odd"] = False
     features["contains_vowel"] = serial_contains_vowel(serial_num)
     return features
@@ -174,13 +174,13 @@ def extract_side_features(sides, labels, serial_model):
             elif labels[index] == 3: # Serial number.
                 serial_num = get_serial_number(cv2_img, serial_model)
                 if serial_num is None:
-                    log(f"Serial number could not be determined.")
+                    log(f"Serial number could not be determined.", config.LOG_WARNING)
                     index += 1
                     continue
-                log(f"Serial number: {serial_num}", verbosity_level=1)
+                log(f"Serial number: {serial_num}", verbose=config.LOG_DEBUG)
                 features["serial_number"] = serial_num
                 serial_features = extract_serial_number_features(serial_num)
-                log(f"Serial number features: {serial_features}", verbosity_level=1)
+                log(f"Serial number features: {serial_features}", verbose=config.LOG_DEBUG)
                 features.update(serial_features)
             elif labels[index] == 5: # Parallel port.
                 features["parallel_port"] = True
@@ -240,15 +240,15 @@ def solve_modules(modules, solver_modules, side_features, serial_model, duration
             if label == 9:
                 result, coords = solver_modules[mod_label].solve(cv2_img, side_features)
                 if result == -1:
-                    log(coords)
+                    log(coords, config.LOG_WARNING)
                     continue
-                log(f"Cut wire at {result}")
+                log(f"Cut wire at {result}", config.LOG_DEBUG)
                 wire_y, wire_x = coords[result]
                 sleep(0.5)
                 win_util.click(mod_x + wire_x, mod_y + wire_y)
             elif label == 10:
                 hold = solver_modules[mod_label].solve(cv2_img, side_features, serial_model)
-                log(f"Hold button: {hold}")
+                log(f"Hold button: {hold}", config.LOG_DEBUG)
                 button_x, button_y = mod_x + 125, mod_y + 175
                 if not hold:
                     win_util.click(button_x, button_y)
@@ -258,8 +258,17 @@ def solve_modules(modules, solver_modules, side_features, serial_model, duration
                     sleep(1)
                     pixel = (184, 255)
                     release_time = solver_modules[mod_label].get_release_time(cv2_img, pixel)
-                    log(f"Release button at {release_time}")
+                    log(f"Release button at {release_time}", config.LOG_DEBUG)
                     release_mouse_at(release_time, duration, button_x, button_y)
+            elif label == 19: # Morse.
+                presses, frequency = solver_modules[mod_label].solve(cv2_img)
+                log(f"Morse frequency: {frequency}.", config.LOG_DEBUG)
+                button_x, button_y = mod_x + 154, mod_y + 236
+                inc_btn_x, inc_btn_y = mod_x + 240, mod_y + 170
+                for _ in range(presses):
+                    win_util.click(inc_btn_x, inc_btn_y)
+                    sleep(0.5)
+                win_util.click(button_x, button_y)
 
             deselect_module(module)
 
@@ -302,6 +311,6 @@ if __name__ == "__main__":
     ]
 
     SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], SERIAL_MODEL)
-    log(f"Side features: {SIDE_FEATURES}", verbosity_level=1)
-    log(f"Modules: {[module_classifier.LABELS[x] for x in PREDICTIONS[:12]]}", verbosity_level=1)
+    log(f"Side features: {SIDE_FEATURES}", verbose=config.LOG_DEBUG)
+    log(f"Modules: {[module_classifier.LABELS[x] for x in PREDICTIONS[:12]]}", config.LOG_DEBUG)
     solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES, SERIAL_MODEL, (TIME_STARTED, MINUTES, SECONDS))

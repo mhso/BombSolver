@@ -1,5 +1,5 @@
 import config
 
-def log(arg, verbosity_level=0):
-    if config.VERBOSITY >= verbosity_level:
+def log(arg, verbose=0):
+    if config.VERBOSITY >= verbose:
         print(f"[BombSolver] - {arg}")

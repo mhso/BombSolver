@@ -1,5 +1,6 @@
 from enum import Enum
 from debug import log
+import config
 from features.button import get_button_features, get_strip_color
 
 def solve(img, features, model):
@@ -8,7 +9,7 @@ def solve(img, features, model):
     and returns whether to hold down, or press the button.
     """
     text, color = get_button_features(img, model)
-    log(f"Button text: {text}, color: {color}")
+    log(f"Button text: {text}, color: {color}", config.LOG_DEBUG)
 
     Color = Enum("Colors", {"White":0, "Yellow":1, "Blue":2, "Red":3})
     if color == Color.Blue.value and text == "Abort":
