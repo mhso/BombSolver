@@ -35,6 +35,18 @@ def inspect_side(mx, my, sx, sy, sw, sh):
     sleep(0.2)
     return SC
 
+def flip_bomb(SW, SH):
+    mid_x = SW // 2
+    mid_y = SH // 2
+    win_util.click(SW - 100, 100, btn="right")
+    sleep(0.5)
+    win_util.click(mid_x, mid_y + (mid_y // 8))
+    sleep(0.2)
+    win_util.mouse_down(mid_x, mid_y, btn="right")
+    sleep(0.5)
+    win_util.mouse_move(SW - int(SW / 4.4), mid_y + (mid_y // 9))
+    sleep(0.5)
+
 def inspect_bomb():
     SW, SH = win_util.get_screen_size()
     mid_x = SW // 2
@@ -58,14 +70,9 @@ def inspect_bomb():
     # Inspect back of bomb.
     win_util.mouse_up(mid_x, mid_y, btn="right")
     sleep(0.5)
-    win_util.click(SW - 100, 100, btn="right")
-    sleep(0.5)
-    win_util.click(mid_x, mid_y + (mid_y // 8))
-    sleep(0.2)
-    win_util.mouse_down(mid_x, mid_y, btn="right")
-    sleep(0.5)
-    back_img = inspect_side(SW - int(SW / 4.4), mid_y + (mid_y // 9), 460, 220, 1000, 640)
-    sleep(0.2)
+    flip_bomb(SW, SH)
+    back_img = screenshot(460, 220, 1000, 640)
+    sleep(0.4)
     win_util.mouse_up(mid_x, mid_y, btn="right")
     return (back_img, front_img, left_img, right_img, top_img, bottom_img)
 
@@ -200,7 +207,7 @@ def select_module(module):
     x = int(start_x + ((module % 3) * offset_x))
     y = int(start_y + ((module // 3) * offset_y))
     win_util.click(x, y)
-    sleep(1.5)
+    sleep(1)
 
 def deselect_module(module):
     SW, SH = win_util.get_screen_size()
@@ -231,13 +238,14 @@ def release_mouse_at(digit, duration, x, y):
         sleep(1)
 
 def solve_modules(modules, solver_modules, side_features, serial_model, duration):
-    for module, label in enumerate(modules[:6]):
+    for module, label in enumerate(modules[:12]):
+        mod_index = module if module < 6 else module - 6
         if label > 8:
             mod_label = label-9
-            select_module(module)
+            select_module(mod_index)
             SC, mod_x, mod_y = screenshot_module()
             cv2_img = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
-            if label == 9:
+            if label == 9: # Wires.
                 result, coords = solver_modules[mod_label].solve(cv2_img, side_features)
                 if result == -1:
                     log(coords, config.LOG_WARNING)
@@ -246,7 +254,7 @@ def solve_modules(modules, solver_modules, side_features, serial_model, duration
                 wire_y, wire_x = coords[result]
                 sleep(0.5)
                 win_util.click(mod_x + wire_x, mod_y + wire_y)
-            elif label == 10:
+            elif label == 10: # Button.
                 hold = solver_modules[mod_label].solve(cv2_img, side_features, serial_model)
                 log(f"Hold button: {hold}", config.LOG_DEBUG)
                 button_x, button_y = mod_x + 125, mod_y + 175
@@ -254,6 +262,7 @@ def solve_modules(modules, solver_modules, side_features, serial_model, duration
                     win_util.click(button_x, button_y)
                     sleep(1)
                 else:
+                    win_util.mouse_move(button_x, button_y)
                     win_util.mouse_down(button_x, button_y)
                     sleep(1)
                     pixel = (184, 255)
@@ -261,7 +270,7 @@ def solve_modules(modules, solver_modules, side_features, serial_model, duration
                     log(f"Release button at {release_time}", config.LOG_DEBUG)
                     release_mouse_at(release_time, duration, button_x, button_y)
             elif label == 19: # Morse.
-                presses, frequency = solver_modules[mod_label].solve(cv2_img)
+                presses, frequency = solver_modules[mod_label].solve(cv2_img, screenshot_module)
                 log(f"Morse frequency: {frequency}.", config.LOG_DEBUG)
                 button_x, button_y = mod_x + 154, mod_y + 236
                 inc_btn_x, inc_btn_y = mod_x + 240, mod_y + 170
@@ -270,7 +279,14 @@ def solve_modules(modules, solver_modules, side_features, serial_model, duration
                     sleep(0.5)
                 win_util.click(button_x, button_y)
 
-            deselect_module(module)
+            sleep(0.5)
+            deselect_module(mod_index)
+        if module == 5:
+            SW, SH = win_util.get_screen_size()
+            flip_bomb(SW, SH)
+            sleep(0.75)
+            win_util.mouse_up(SW // 2, SH // 2, btn="right")
+            sleep(0.5)
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2

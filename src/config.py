@@ -1,5 +1,5 @@
 # Misc options.
-VERBOSITY = 1
+VERBOSITY = 2
 LOG_WARNING = 1
 LOG_DEBUG = 2
 

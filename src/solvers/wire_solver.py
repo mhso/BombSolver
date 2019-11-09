@@ -16,10 +16,10 @@ def get_nth_wire(wires, index, color=None):
     last_wire = 0
     for wire in wires:
         if wire > 0 and (color is None or color == wire):
-            wires_seen += 1
             last_wire = curr_index
             if index != -1 and wires_seen >= index:
                 return curr_index
+            wires_seen += 1
         curr_index += 1
     return last_wire
 

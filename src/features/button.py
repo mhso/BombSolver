@@ -19,7 +19,7 @@ def get_threshold(img, color):
     gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
     if color > 1:
         gray = 255 - gray
-    thresh_values = [60, 120, 160, 160]
+    thresh_values = [60, 90, 90, 90]
     thresh = cv2.threshold(gray, thresh_values[color], 255, cv2.THRESH_BINARY_INV)[1]
     return thresh
 

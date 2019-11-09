@@ -76,8 +76,8 @@ def solve(img, screenshot_func):
         symbols = ""
         while True:
             sleep(sleep_duration)
-            sc = array(screenshot_func())
-            rgb = split_colors(cv2.cvtColor(sc, cv2.COLOR_RGB2BGR)) # Grab new image.
+            sc, _, _ = screenshot_func()
+            rgb = split_colors(cv2.cvtColor(array(sc), cv2.COLOR_RGB2BGR)) # Grab new image.
 
             if is_lit(pixel, rgb) != lit: # Check if light has changed state.
                 lit = not lit
