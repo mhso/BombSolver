@@ -90,6 +90,7 @@ def color_in_range(img, pixel, low, high):
     blue = img[:, :, 0]
     green = img[:, :, 1]
     red = img[:, :, 2]
+    print(f"Color: {img[pixel]}")
     return (red[pixel] >= low[0] and green[pixel] >= low[1]
             and blue[pixel] >= low[2] and red[pixel] <= high[0]
             and green[pixel] <= high[1] and blue[pixel] <= high[2])
@@ -136,7 +137,7 @@ def get_button_features(image, model):
         masks = reshape_masks([masks[0]])
         prediction = classifier.predict(model, masks[0])
         best_pred = classifier_util.get_best_prediction(prediction)
-        if best_pred[0] == "a":
+        if classifier.LABELS[best_pred[0]] == "a":
             return "Abort", color
         return "Press", color
 

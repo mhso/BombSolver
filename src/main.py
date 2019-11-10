@@ -26,7 +26,7 @@ def start_level():
     win_util.click(int(SW - SW/2.6), int(SH - SH/3.3))
 
 def wait_for_light():
-    sleep(16.5)
+    sleep(16.4)
 
 def inspect_side(mx, my, sx, sy, sw, sh):
     win_util.mouse_move(mx, my)
@@ -231,54 +231,88 @@ def release_mouse_at(digit, duration, x, y):
     while True:
         remaining = get_time_remaining(time_started, minutes, seconds)
         sec_str = str(remaining % 60)
+        if len(sec_str) == 1:
+            sec_str = "0" + sec_str
         digits = (remaining // 60, int(sec_str[0]), int(sec_str[1]))
         if digit in digits:
             win_util.mouse_up(x, y)
             break
-        sleep(1)
+        sleep(0.5)
 
-def solve_modules(modules, solver_modules, side_features, serial_model, duration):
+def solve_wires(image, mod_pos, solver, side_features):
+    mod_x, mod_y = mod_pos
+    result, coords = solver.solve(image, side_features)
+    if result == -1:
+        log(coords, config.LOG_WARNING)
+        return
+    log(f"Cut wire at {result}", config.LOG_DEBUG)
+    wire_y, wire_x = coords[result]
+    sleep(0.5)
+    win_util.click(mod_x + wire_x, mod_y + wire_y)
+
+def solve_button(image, mod_pos, solver, side_features, serial_model, duration):
+    mod_x, mod_y = mod_pos
+    hold = solver.solve(image, side_features, serial_model)
+    log(f"Hold button: {hold}", config.LOG_DEBUG)
+    button_x, button_y = mod_x + 125, mod_y + 175
+    if not hold:
+        win_util.click(button_x, button_y)
+        sleep(1)
+    else:
+        win_util.mouse_move(button_x, button_y)
+        win_util.mouse_down(button_x, button_y)
+        sleep(0.9) # 48 frames until strip lights up.
+        SC, _, _ = screenshot_module()
+        image = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
+        pixel = (184, 255)
+        release_time = solver.get_release_time(image, pixel)
+        log(f"Release button at {release_time}", config.LOG_DEBUG)
+        release_mouse_at(release_time, duration, button_x, button_y)
+
+def solve_simon(image, mod_pos, solver, side_features):
+    mod_x, mod_y = mod_pos
+    num = 1
+    while not solver.is_solved(image):
+        btn_coords = solver.solve(image, screenshot_module, side_features, num)
+        for coords in btn_coords:
+            button_y, button_x = coords
+            win_util.click(mod_x + button_x, mod_y + button_y)
+            sleep(0.5)
+        sleep(1)
+        num += 1
+        SC, _, _ = screenshot_module()
+        image = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
+
+def solve_morse(image, mod_pos, solver):
+    mod_x, mod_y = mod_pos
+    presses, frequency = solver.solve(image, screenshot_module)
+    log(f"Morse frequency: {frequency}.", config.LOG_DEBUG)
+    button_x, button_y = mod_x + 154, mod_y + 236
+    inc_btn_x, inc_btn_y = mod_x + 240, mod_y + 170
+    for _ in range(presses):
+        win_util.click(inc_btn_x, inc_btn_y)
+        sleep(0.3)
+    win_util.click(button_x, button_y)
+
+def solve_modules(modules, module_solvers, side_features, serial_model, duration):
+    dont_solve = []
     for module, label in enumerate(modules[:12]):
         mod_index = module if module < 6 else module - 6
         if label > 8:
             mod_label = label-9
             select_module(mod_index)
-            SC, mod_x, mod_y = screenshot_module()
+            SC, x, y = screenshot_module()
+            mod_pos = (x, y)
             cv2_img = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
-            if label == 9: # Wires.
-                result, coords = solver_modules[mod_label].solve(cv2_img, side_features)
-                if result == -1:
-                    log(coords, config.LOG_WARNING)
-                    continue
-                log(f"Cut wire at {result}", config.LOG_DEBUG)
-                wire_y, wire_x = coords[result]
-                sleep(0.5)
-                win_util.click(mod_x + wire_x, mod_y + wire_y)
-            elif label == 10: # Button.
-                hold = solver_modules[mod_label].solve(cv2_img, side_features, serial_model)
-                log(f"Hold button: {hold}", config.LOG_DEBUG)
-                button_x, button_y = mod_x + 125, mod_y + 175
-                if not hold:
-                    win_util.click(button_x, button_y)
-                    sleep(1)
-                else:
-                    win_util.mouse_move(button_x, button_y)
-                    win_util.mouse_down(button_x, button_y)
-                    sleep(1)
-                    pixel = (184, 255)
-                    release_time = solver_modules[mod_label].get_release_time(cv2_img, pixel)
-                    log(f"Release button at {release_time}", config.LOG_DEBUG)
-                    release_mouse_at(release_time, duration, button_x, button_y)
-            elif label == 19: # Morse.
-                presses, frequency = solver_modules[mod_label].solve(cv2_img, screenshot_module)
-                log(f"Morse frequency: {frequency}.", config.LOG_DEBUG)
-                button_x, button_y = mod_x + 154, mod_y + 236
-                inc_btn_x, inc_btn_y = mod_x + 240, mod_y + 170
-                for _ in range(presses):
-                    win_util.click(inc_btn_x, inc_btn_y)
-                    sleep(0.5)
-                win_util.click(button_x, button_y)
-
+            if label == 9 and label not in dont_solve: # Wires.
+                solve_wires(cv2_img, mod_pos, module_solvers[mod_label], side_features)
+            elif label == 10 and label not in dont_solve: # Button.
+                solve_button(cv2_img, mod_pos, module_solvers[mod_label],
+                             side_features, serial_model, duration)
+            elif label == 12 and label not in dont_solve: # Simon Says.
+                solve_simon(cv2_img, mod_pos, module_solvers[mod_label], side_features)
+            elif label == 19 and label not in dont_solve: # Morse.
+                solve_morse(cv2_img, mod_pos, module_solvers[mod_label])
             sleep(0.5)
             deselect_module(mod_index)
         if module == 5:

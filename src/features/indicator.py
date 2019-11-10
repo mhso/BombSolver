@@ -114,8 +114,9 @@ def determine_alignment(image, bbox, lit):
     if lit:
         return lit
     mid_x = (bbox[2] + bbox[3]) // 2
-    q1_x = (bbox[2] + mid_x) // 2
-    q3_x = mid_x + q1_x
+    q = abs(bbox[3] - bbox[2]) // 4
+    q1_x = (bbox[2] + q)
+    q3_x = abs(bbox[2] - bbox[3]) - q + bbox[2]
     x_coords = [q1_x, mid_x, q3_x]
     y_coords = [bbox[1]-30, bbox[1]-60, bbox[0]+30, bbox[0]+60]
     for x in x_coords:

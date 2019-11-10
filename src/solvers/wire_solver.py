@@ -15,7 +15,7 @@ def get_nth_wire(wires, index, color=None):
     curr_index = 0
     last_wire = 0
     for wire in wires:
-        if wire > 0 and (color is None or color == wire):
+        if wire >= 0 and (color is None or color == wire):
             last_wire = curr_index
             if index != -1 and wires_seen >= index:
                 return curr_index
@@ -38,7 +38,7 @@ def solve(img, features):
     Colors = Enum("Colors", {"Black":0, "Yellow":1, "Blue":2, "White":3, "Red":4})
     num_wires = 0
     color_hist = [0, 0, 0, 0, 0]
-    wire_hist = [0, 0, 0, 0, 0, 0]
+    wire_hist = [-1, -1, -1, -1, -1, -1]
     for i, coord in enumerate(coords):
         for j, (low, high) in enumerate(color_ranges):
             if color_in_range(img, coord, low, high):
@@ -54,10 +54,10 @@ def solve(img, features):
 
     if num_wires == 3:
         print("3 Wires")
-        last_wire = get_nth_wire(wire_hist, -1)
         if color_hist[Colors.Red.value] == 0: # There are no red wires.
             print("Case 1")
-            return get_nth_wire(wire_hist, 2), coords # Cut second wire.
+            return get_nth_wire(wire_hist, 1), coords # Cut second wire.
+        last_wire = get_nth_wire(wire_hist, -1)
         if wire_hist[last_wire] == Colors.White.value: # Last wire is white.
             print("Case 2")
             return get_nth_wire(wire_hist, -1), coords # Cut last wire

@@ -91,6 +91,7 @@ def solve(img, screenshot_func):
                         break
                     if duration >= letter_pause:
                         print("--- END OF LETTER ---")
+                        print(f"LETTER: {LETTERS[symbols]}")
                         letters += LETTERS[symbols]
                         symbols = ""
                 else:
