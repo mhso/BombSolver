@@ -12,8 +12,12 @@ from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
                      maze_solver, password_solver, morse_solver)
 from features.serial_number import get_serial_number
 from features.bomb_duration import get_bomb_duration
+from features.util import convert_to_cv2
 from features.indicator import get_indicator_features
+from features.light_monitor import LightMonitor
 import config
+
+LIGHT_MONITOR = None
 
 def sleep_until_start():
     while True:
@@ -25,7 +29,7 @@ def start_level():
     SW, SH = win_util.get_screen_size()
     win_util.click(int(SW - SW/2.6), int(SH - SH/3.3))
 
-def wait_for_light():
+def await_level_start():
     sleep(16.4)
 
 def inspect_side(mx, my, sx, sy, sw, sh):
@@ -173,7 +177,7 @@ def extract_side_features(sides, labels, serial_model):
     }
     for side in sides:
         for img in side:
-            cv2_img = cv2.cvtColor(array(img), cv2.COLOR_RGB2BGR)
+            cv2_img = convert_to_cv2(img)
             if labels[index] == 1:
                 features["batteries"] += 1
             elif labels[index] == 2:
@@ -187,7 +191,6 @@ def extract_side_features(sides, labels, serial_model):
                 log(f"Serial number: {serial_num}", verbose=config.LOG_DEBUG)
                 features["serial_number"] = serial_num
                 serial_features = extract_serial_number_features(serial_num)
-                log(f"Serial number features: {serial_features}", verbose=config.LOG_DEBUG)
                 features.update(serial_features)
             elif labels[index] == 5: # Parallel port.
                 features["parallel_port"] = True
@@ -308,11 +311,12 @@ def solve_modules(modules, module_solvers, side_features, serial_model, duration
     for module, label in enumerate(modules[:12]):
         mod_index = module if module < 6 else module - 6
         if label > 8:
+            LIGHT_MONITOR.wait_for_light() # If the room is dark, wait for light.
             mod_label = label-9
             select_module(mod_index)
             SC, x, y = screenshot_module()
             mod_pos = (x, y)
-            cv2_img = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
+            cv2_img = convert_to_cv2(SC)
             if label == 9 and label not in dont_solve: # Wires.
                 solve_wires(cv2_img, mod_pos, module_solvers[mod_label], side_features)
             elif label == 10 and label not in dont_solve: # Button.
@@ -334,36 +338,41 @@ def solve_modules(modules, module_solvers, side_features, serial_model, duration
             sleep(0.5)
 
 if __name__ == "__main__":
-    config.MAX_GPU_FRACTION = 0.2
+    config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
     log("Loading classifier model...")
+    # Load model for classifying modules.
     MODEL = module_classifier.load_from_file("../resources/trained_models/module_model")
 
+    # Load model for classifying letters (serial number, indicators, etc.).
     SERIAL_MODEL = serial_classifier.load_from_file("../resources/trained_models/serial_model")
 
     log("Waiting for level selection...")
     log("Press S when a level has been selected.")
-    sleep_until_start()
+    sleep_until_start() # Wait for level selection.
 
     MINUTES = 8
     SECONDS = 0
 
     if "skip" not in argv:
+        # Extract bomb duration from description of bomb in main menu.
         MINUTES, SECONDS = get_bomb_duration(SERIAL_MODEL)
         log(f"Bomb duration: {MINUTES} minute(s) & {SECONDS} seconds.")
 
         start_level()
 
         log("Waiting for level to start...")
-        wait_for_light()
+        await_level_start() # Wait for level to load and bomb timer to start.
 
-    TIME_STARTED = time()
+    TIME_STARTED = time() # Time started is used for solving the button module.
 
     log("Inspecting bomb...")
-    IMAGES = inspect_bomb()
-    SIDE_PARTITIONS = partition_sides(IMAGES)
+
+    IMAGES = inspect_bomb() # Capture images of all sides of the bomb.
+    SIDE_PARTITIONS = partition_sides(IMAGES) # Split images into modules/side of bomb.
+    # Identify features from the side of the bomb (indicators, batteries, serial number, etc.).
     FEATURES, PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
 
-    SOLVERS = [
+    SOLVERS = [ # Solvers for the different modules.
         wire_solver, button_solver,
         symbols_solver, simon_solver,
         wire_seq_solver, compl_wires_solver,
@@ -371,7 +380,13 @@ if __name__ == "__main__":
         password_solver, morse_solver
     ]
 
+    # Extract aforementioned features (read serial number, count num. of batteries, etc.).
     SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], SERIAL_MODEL)
+
     log(f"Side features: {SIDE_FEATURES}", verbose=config.LOG_DEBUG)
     log(f"Modules: {[module_classifier.LABELS[x] for x in PREDICTIONS[:12]]}", config.LOG_DEBUG)
+
+    LIGHT_MONITOR = LightMonitor() # Monitor whether the light in the room has turned off.
+
+    # Solve all modules. Back of the bomb first, then from the top, left to right.
     solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES, SERIAL_MODEL, (TIME_STARTED, MINUTES, SECONDS))

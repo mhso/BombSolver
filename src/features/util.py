@@ -1,3 +1,6 @@
+from numpy import array
+import cv2
+
 def color_in_range(pixel, rgb, lo_rgb, hi_rgb):
     red, green, blue = rgb
     return (red[pixel] >= lo_rgb[0] and green[pixel] >= lo_rgb[1]
@@ -9,3 +12,6 @@ def split_channels(img_bgr):
     green = img_bgr[:, :, 1]
     red = img_bgr[:, :, 2]
     return (red, green, blue)
+
+def convert_to_cv2(img):
+    return cv2.cvtColor(array(img), cv2.COLOR_RGB2BGR)

@@ -31,7 +31,7 @@ def inspect_and_reset(callback):
     while inspections and not win_util.q_pressed():
         if "skip" not in argv:
             main.start_level()
-            main.wait_for_light()
+            main.await_level_start()
         log("Inspecting bomb...")
         IMAGES = main.inspect_bomb()
         SIDE_PARTITIONS = main.partition_sides(IMAGES)

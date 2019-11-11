@@ -1,5 +1,13 @@
-import solvers.compl_wires_solver as solver
-import cv2
+from time import sleep
+import windows_util as win_util
 
-img = cv2.imread("../resources/misc/Compl_Wires.png", cv2.IMREAD_COLOR)
-solver.solve(img, {})
+def sleep_until_start():
+    while True:
+        if win_util.s_pressed():
+            break
+        sleep(0.1)
+
+sleep_until_start()
+
+SW, SH = win_util.get_screen_size()
+win_util.mouse_move(160, SH-190)
