@@ -8,6 +8,7 @@ import model.serial_classifier as classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import windows_util as win_util
+import features.util as feature_util
 from debug import log
 
 def indicator_bbox(img):
@@ -86,20 +87,12 @@ def get_masked_images(image, contours):
 
     return masks
 
-def color_in_range(img, pixel, low, high):
-    blue = img[:, :, 0]
-    green = img[:, :, 1]
-    red = img[:, :, 2]
-    print(f"Color: {img[pixel]}")
-    return (red[pixel] >= low[0] and green[pixel] >= low[1]
-            and blue[pixel] >= low[2] and red[pixel] <= high[0]
-            and green[pixel] <= high[1] and blue[pixel] <= high[2])
-
 def get_button_color(image):
     color_ranges = config.BUTTON_COLOR_RANGE
     pixel = 210, 120
     for i, (low, high) in enumerate(color_ranges):
-        if color_in_range(image, pixel, low, high):
+        rgb = feature_util.split_channels(image)
+        if feature_util.color_in_range(pixel, rgb, low, high):
             return i
     return -1
 
@@ -144,7 +137,8 @@ def get_button_features(image, model):
 def get_strip_color(img, pixel):
     colors = config.BUTTON_COLOR_RANGE
     for i, (low, high) in enumerate(colors):
-        if color_in_range(img, pixel, low, high):
+        rgb = feature_util.split_channels(img)
+        if feature_util.color_in_range(pixel, rgb, low, high):
             return i
     return -1
 

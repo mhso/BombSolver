@@ -283,6 +283,15 @@ def solve_simon(image, mod_pos, solver, side_features):
         SC, _, _ = screenshot_module()
         image = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
 
+def solve_complicated_wires(image, mod_pos, solver, side_features):
+    mod_x, mod_y = mod_pos
+    wires_to_cut, coords = solver.solve(image, side_features)
+    for i, cut in enumerate(wires_to_cut):
+        if cut:
+            y, x = coords[i]
+            win_util.click(mod_x + x, mod_y + y)
+            sleep(0.5)
+
 def solve_morse(image, mod_pos, solver):
     mod_x, mod_y = mod_pos
     presses, frequency = solver.solve(image, screenshot_module)
@@ -311,11 +320,13 @@ def solve_modules(modules, module_solvers, side_features, serial_model, duration
                              side_features, serial_model, duration)
             elif label == 12 and label not in dont_solve: # Simon Says.
                 solve_simon(cv2_img, mod_pos, module_solvers[mod_label], side_features)
+            elif label == 14 and label not in dont_solve: # Complicated Wires.
+                solve_complicated_wires(cv2_img, mod_pos, module_solvers[mod_label], side_features)
             elif label == 19 and label not in dont_solve: # Morse.
                 solve_morse(cv2_img, mod_pos, module_solvers[mod_label])
             sleep(0.5)
             deselect_module(mod_index)
-        if module == 5:
+        if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
             SW, SH = win_util.get_screen_size()
             flip_bomb(SW, SH)
             sleep(0.75)

@@ -1,14 +1,7 @@
 from enum import Enum
 from debug import log
+import features.util as features_util
 import config
-
-def color_in_range(img, pixel, low, high):
-    blue = img[:, :, 0]
-    green = img[:, :, 1]
-    red = img[:, :, 2]
-    return (red[pixel] >= low[0] and green[pixel] >= low[1]
-            and blue[pixel] >= low[2] and red[pixel] <= high[0]
-            and green[pixel] <= high[1] and blue[pixel] <= high[2])
 
 def get_nth_wire(wires, index, color=None):
     wires_seen = 0
@@ -39,9 +32,10 @@ def solve(img, features):
     num_wires = 0
     color_hist = [0, 0, 0, 0, 0]
     wire_hist = [-1, -1, -1, -1, -1, -1]
+    rgb = features_util.split_channels(img)
     for i, coord in enumerate(coords):
         for j, (low, high) in enumerate(color_ranges):
-            if color_in_range(img, coord, low, high):
+            if features_util.color_in_range(coord, rgb, low, high):
                 color_hist[j] += 1
                 wire_hist[i] = j
                 num_wires += 1

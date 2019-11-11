@@ -1,6 +1,5 @@
 from glob import glob
 from time import sleep
-import math
 import numpy as np
 import cv2
 import config
@@ -8,6 +7,7 @@ import model.serial_classifier as classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import windows_util as win_util
+import features.util as features_util
 from debug import log
 
 def bbox_thing(img):
@@ -55,7 +55,7 @@ def get_segmented_image(image):
     thresh, bbox = get_threshold(image)
     _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-    return thresh, contours, bbox # alignment.
+    return thresh, contours, bbox
 
 def get_masked_images(image, contours):
     mask = np.zeros(image.shape[:2])
@@ -97,19 +97,6 @@ def get_masked_images(image, contours):
 
     return filtered_masks
 
-def check_color(image, x, y):
-    h, w = image.shape[:2]
-    if y >= h or y < 0:
-        return False
-    min_c, max_c = ((25, 25, 25), (45, 45, 45))
-    blue = image[:, :, 0]
-    green = image[:, :, 1]
-    red = image[:, :, 2]
-    pixel = (y, x)
-    return (red[pixel] >= min_c[0] and green[pixel] >= min_c[1]
-            and blue[pixel] >= min_c[2] and red[pixel] <= max_c[0]
-            and green[pixel] <= max_c[1] and blue[pixel] <= max_c[2])
-
 def determine_alignment(image, bbox, lit):
     if lit:
         return lit
@@ -121,7 +108,13 @@ def determine_alignment(image, bbox, lit):
     y_coords = [bbox[1]-30, bbox[1]-60, bbox[0]+30, bbox[0]+60]
     for x in x_coords:
         for i, y in enumerate(y_coords):
-            if check_color(image, x, y):
+            h, _ = image.shape[:2]
+            if y >= h or y < 0:
+                continue
+            min_c, max_c = ((25, 25, 25), (45, 45, 45))
+            rgb = features_util.split_channels(image)
+            pixel = (y, x)
+            if features_util.color_in_range(pixel, rgb, min_c, max_c):
                 return 1 if i < 2 else -1
     return 0
 
