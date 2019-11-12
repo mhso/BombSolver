@@ -1,5 +1,3 @@
-from glob import glob
-from time import sleep
 import math
 import numpy as np
 import cv2
@@ -8,6 +6,7 @@ import model.serial_classifier as classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import windows_util as win_util
+from debug import log
 from model.grab_img import screenshot
 
 def get_threshold(img):
@@ -116,6 +115,8 @@ def format_time(prediction):
 
 def get_bomb_duration(model):
     masks = get_characters()
+    if len(masks) != 3:
+        log(f"WARNING: Bomb duration string length != 3 (len={len(masks)}).", config.LOG_WARNING)
     masks = reshape_masks(masks)
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)

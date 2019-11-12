@@ -2,11 +2,10 @@ from time import sleep, time
 from sys import argv
 from math import floor
 from numpy import array
-import cv2
 from debug import log
-from model.grab_img import screenshot
 import windows_util as win_util
-from model import module_classifier, serial_classifier, classifier_util, dataset_util
+from model import (module_classifier, serial_classifier, classifier_util, dataset_util)
+from model.grab_img import screenshot
 from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
                      wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
                      maze_solver, password_solver, morse_solver)
@@ -136,7 +135,7 @@ def identify_side_features(sides, model):
         for img in side:
             padded = dataset_util.pad_image(array(img))
             reshaped = dataset_util.resize_img(padded, config.INPUT_DIM[1:])
-            converted = cv2.cvtColor(reshaped, cv2.COLOR_RGB2BGR) / 255
+            converted = convert_to_cv2(reshaped) / 255
             pred = module_classifier.predict(model, converted)
             predict_label = classifier_util.get_best_prediction(pred)[0]
             predictions[i] = predict_label
@@ -266,7 +265,7 @@ def solve_button(image, mod_pos, solver, side_features, serial_model, duration):
         win_util.mouse_down(button_x, button_y)
         sleep(0.9) # 48 frames until strip lights up.
         SC, _, _ = screenshot_module()
-        image = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
+        image = convert_to_cv2(SC)
         pixel = (184, 255)
         release_time = solver.get_release_time(image, pixel)
         log(f"Release button at {release_time}", config.LOG_DEBUG)
@@ -284,7 +283,22 @@ def solve_simon(image, mod_pos, solver, side_features):
         sleep(1)
         num += 1
         SC, _, _ = screenshot_module()
-        image = cv2.cvtColor(array(SC), cv2.COLOR_RGB2BGR)
+        image = convert_to_cv2(SC)
+
+def solve_wire_sequence(image, mod_pos, solver):
+    mod_x, mod_y = mod_pos
+    button_x, button_y = 128 + mod_x, 248 + mod_y
+    color_hist = [0, 0, 0]
+    for _ in range(4):
+        print(f"Wires seen: {color_hist}")
+        wires_to_cut, color_hist, coords = solver.solve(image, color_hist)
+        for i, cut in enumerate(wires_to_cut):
+            if cut:
+                y, x = coords[i]
+                win_util.click(mod_x + x, mod_y + y)
+                sleep(0.5)
+        win_util.click(button_x, button_y)
+        sleep(2)
 
 def solve_complicated_wires(image, mod_pos, solver, side_features):
     mod_x, mod_y = mod_pos
@@ -324,6 +338,8 @@ def solve_modules(modules, module_solvers, side_features, serial_model, duration
                              side_features, serial_model, duration)
             elif label == 12 and label not in dont_solve: # Simon Says.
                 solve_simon(cv2_img, mod_pos, module_solvers[mod_label], side_features)
+            elif label == 13 and label not in dont_solve: # Wire Sequence.
+                solve_wire_sequence(cv2_img, mod_pos, module_solvers[mod_label])
             elif label == 14 and label not in dont_solve: # Complicated Wires.
                 solve_complicated_wires(cv2_img, mod_pos, module_solvers[mod_label], side_features)
             elif label == 19 and label not in dont_solve: # Morse.

@@ -123,4 +123,4 @@ def load_dataset():
             images.append(reshaped)
             labels.append(np.array(one_hot_labels))
 
-    return dataset_util.extract_test_data(np.array(images), np.array(labels), config.SERIAL_OUTPUT_DIM, 3)
+    return dataset_util.extract_test_data(np.array(images), np.array(labels), config.SERIAL_OUTPUT_DIM, 4)

@@ -1,13 +1,5 @@
-from time import sleep
-import windows_util as win_util
+import cv2
+import solvers.wire_seq_solver as solver
 
-def sleep_until_start():
-    while True:
-        if win_util.s_pressed():
-            break
-        sleep(0.1)
-
-sleep_until_start()
-
-SW, SH = win_util.get_screen_size()
-win_util.mouse_move(160, SH-190)
+img = cv2.imread("../resources/misc/Wire_Seq_5.png", cv2.IMREAD_COLOR)
+solver.solve(img, [0, 0, 0])

@@ -20,7 +20,7 @@ KERNEL_SIZE = 5
 
 USE_BIAS = False
 
-REGULARIZER_CONST = 0.001
+REGULARIZER_CONST = 0.0001
 
 LEARNING_RATE = 0.02
 
@@ -29,12 +29,12 @@ MOMENTUM = 0.9
 WEIGHT_DECAY = 1e-4
 
 MODULE_BATCH_SIZE = 128
-SERIAL_BATCH_SIZE = 204
+SERIAL_BATCH_SIZE = 256
 
 EPOCHS_PER_BATCH = 5
 SERIAL_EPOCHS_PER_BATCH = 10
 
-VALIDATION_SPLIT = 0.3
+VALIDATION_SPLIT = 0.4
 
 # Image analysis specific
 SERIAL_MIN_RED = (110, 0, 0)
@@ -44,7 +44,7 @@ WIRE_COLOR_RANGE = [
     ((0, 0, 0), (25, 25, 25)), # Black.
     ((220, 220, 0), (255, 255, 20)), # Yellow.
     ((30, 30, 120), (100, 100, 255)), # Blue.
-    ((200, 200, 200), (255, 255, 255)), # White.
+    ((175, 175, 175), (255, 255, 255)), # White.
     ((139, 0, 0), (255, 99, 71)) # Red.
 ]
 

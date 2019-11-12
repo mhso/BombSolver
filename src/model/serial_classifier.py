@@ -18,6 +18,8 @@ def build_model():
     layer = utils.conv_layer(layer, 64, 3)
     layer = Dropout(0.25)(layer)
     layer = MaxPooling2D(pool_size=(2, 2), padding="same")(layer)
+    layer = Dense(512, activation='relu')(layer)
+    layer = MaxPooling2D(pool_size=(2, 2), padding="same")(layer)
     layer = Flatten()(layer)
     layer = Dense(256, activation='relu')(layer)
     layer = Dropout(0.5)(layer)
