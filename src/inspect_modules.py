@@ -6,6 +6,8 @@ def inspect():
     SW, SH = win_util.get_screen_size()
     MID_X = SW // 2
     MID_Y = SH // 2
+    win_util.click(SW - 100, 100, btn="right")
+    sleep(1)
     win_util.click(MID_X, MID_Y + (MID_X // 8))
     sleep(0.5)
 
