@@ -2,6 +2,13 @@ from glob import glob
 import inspect_bomb
 from debug import log
 
+INCLUDED_MODULES = [10, 11, 15, 16, 18]
+AUTO_LABEL = int(argv[2]) if len(argv) > 2 else False
+MODEL = (None if not AUTO_LABEL else
+         classifier.load_from_file("../resources/trained_models/module_model"))
+
+
+
 def save_data(sides):
     NUM_IMAGES = len(glob("../resources/training_images/modules/*.png"))
     INDEX = NUM_IMAGES

@@ -128,8 +128,7 @@ def partition_sides(images):
     return (main_sides, short_sides, long_sides)
 
 def identify_side_features(sides, model):
-    features = [0] * config.OUTPUT_DIM
-    predictions = [0] * 32
+    predictions = [0] * config.OUTPUT_DIM
     i = 0
     for side in sides:
         for img in side:
@@ -139,9 +138,8 @@ def identify_side_features(sides, model):
             pred = module_classifier.predict(model, converted)
             predict_label = classifier_util.get_best_prediction(pred)[0]
             predictions[i] = predict_label
-            features[predict_label] += 1
             i += 1
-    return (features, predictions)
+    return predictions
 
 def print_features(features):
     for feature, amount in enumerate(features):
@@ -241,9 +239,9 @@ def release_mouse_at(digit, duration, x, y):
             break
         sleep(0.5)
 
-def solve_wires(image, mod_pos, solver, side_features):
+def solve_wires(image, mod_pos, side_features):
     mod_x, mod_y = mod_pos
-    result, coords = solver.solve(image, side_features)
+    result, coords = wire_solver.solve(image, side_features)
     if result == -1:
         log(coords, config.LOG_WARNING)
         return
@@ -252,9 +250,9 @@ def solve_wires(image, mod_pos, solver, side_features):
     sleep(0.5)
     win_util.click(mod_x + wire_x, mod_y + wire_y)
 
-def solve_button(image, mod_pos, solver, side_features, serial_model, duration):
+def solve_button(image, mod_pos, side_features, serial_model, duration):
     mod_x, mod_y = mod_pos
-    hold = solver.solve(image, side_features, serial_model)
+    hold = button_solver.solve(image, side_features, serial_model)
     log(f"Hold button: {hold}", config.LOG_DEBUG)
     button_x, button_y = mod_x + 125, mod_y + 175
     if not hold:
@@ -267,15 +265,15 @@ def solve_button(image, mod_pos, solver, side_features, serial_model, duration):
         SC, _, _ = screenshot_module()
         image = convert_to_cv2(SC)
         pixel = (184, 255)
-        release_time = solver.get_release_time(image, pixel)
+        release_time = button_solver.get_release_time(image, pixel)
         log(f"Release button at {release_time}", config.LOG_DEBUG)
         release_mouse_at(release_time, duration, button_x, button_y)
 
-def solve_simon(image, mod_pos, solver, side_features):
+def solve_simon(image, mod_pos, side_features):
     mod_x, mod_y = mod_pos
     num = 1
-    while not solver.is_solved(image):
-        btn_coords = solver.solve(image, screenshot_module, side_features, num)
+    while not simon_solver.is_solved(image):
+        btn_coords = simon_solver.solve(image, screenshot_module, side_features, num)
         for coords in btn_coords:
             button_y, button_x = coords
             win_util.click(mod_x + button_x, mod_y + button_y)
@@ -285,13 +283,13 @@ def solve_simon(image, mod_pos, solver, side_features):
         SC, _, _ = screenshot_module()
         image = convert_to_cv2(SC)
 
-def solve_wire_sequence(image, mod_pos, solver):
+def solve_wire_sequence(image, mod_pos):
     mod_x, mod_y = mod_pos
     button_x, button_y = 128 + mod_x, 248 + mod_y
     color_hist = [0, 0, 0]
     for _ in range(4):
         print(f"Wires seen: {color_hist}")
-        wires_to_cut, color_hist, coords = solver.solve(image, color_hist)
+        wires_to_cut, color_hist, coords = wire_seq_solver.solve(image, color_hist)
         for i, cut in enumerate(wires_to_cut):
             if cut:
                 y, x = coords[i]
@@ -300,18 +298,18 @@ def solve_wire_sequence(image, mod_pos, solver):
         win_util.click(button_x, button_y)
         sleep(2)
 
-def solve_complicated_wires(image, mod_pos, solver, side_features):
+def solve_complicated_wires(image, mod_pos, side_features):
     mod_x, mod_y = mod_pos
-    wires_to_cut, coords = solver.solve(image, side_features)
+    wires_to_cut, coords = compl_wires_solver.solve(image, side_features)
     for i, cut in enumerate(wires_to_cut):
         if cut:
             y, x = coords[i]
             win_util.click(mod_x + x, mod_y + y)
             sleep(0.5)
 
-def solve_morse(image, mod_pos, solver):
+def solve_morse(image, mod_pos):
     mod_x, mod_y = mod_pos
-    presses, frequency = solver.solve(image, screenshot_module)
+    presses, frequency = morse_solver.solve(image, screenshot_module)
     log(f"Morse frequency: {frequency}.", config.LOG_DEBUG)
     button_x, button_y = mod_x + 154, mod_y + 236
     inc_btn_x, inc_btn_y = mod_x + 240, mod_y + 170
@@ -320,30 +318,35 @@ def solve_morse(image, mod_pos, solver):
         sleep(0.3)
     win_util.click(button_x, button_y)
 
-def solve_modules(modules, module_solvers, side_features, serial_model, duration):
+def solve_symbols(image, mod_pos, solver):
+    mod_x, mod_y = mod_pos
+    coords = symbols_solver.solve(image)
+    for y, x in coords:
+        win_util.click(mod_x + x, mod_y + y)
+        sleep(0.5)
+
+def solve_modules(modules, side_features, serial_model, duration):
     dont_solve = []
     for module, label in enumerate(modules[:12]):
         mod_index = module if module < 6 else module - 6
         if label > 8:
             LIGHT_MONITOR.wait_for_light() # If the room is dark, wait for light.
-            mod_label = label-9
             select_module(mod_index)
             SC, x, y = screenshot_module()
             mod_pos = (x, y)
             cv2_img = convert_to_cv2(SC)
             if label == 9 and label not in dont_solve: # Wires.
-                solve_wires(cv2_img, mod_pos, module_solvers[mod_label], side_features)
+                solve_wires(cv2_img, mod_pos, side_features)
             elif label == 10 and label not in dont_solve: # Button.
-                solve_button(cv2_img, mod_pos, module_solvers[mod_label],
-                             side_features, serial_model, duration)
+                solve_button(cv2_img, mod_pos, side_features, serial_model, duration)
             elif label == 12 and label not in dont_solve: # Simon Says.
-                solve_simon(cv2_img, mod_pos, module_solvers[mod_label], side_features)
+                solve_simon(cv2_img, mod_pos, side_features)
             elif label == 13 and label not in dont_solve: # Wire Sequence.
-                solve_wire_sequence(cv2_img, mod_pos, module_solvers[mod_label])
+                solve_wire_sequence(cv2_img, mod_pos)
             elif label == 14 and label not in dont_solve: # Complicated Wires.
-                solve_complicated_wires(cv2_img, mod_pos, module_solvers[mod_label], side_features)
+                solve_complicated_wires(cv2_img, mod_pos, side_features)
             elif label == 19 and label not in dont_solve: # Morse.
-                solve_morse(cv2_img, mod_pos, module_solvers[mod_label])
+                solve_morse(cv2_img, mod_pos)
             sleep(0.5)
             deselect_module(mod_index)
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
@@ -386,15 +389,7 @@ if __name__ == "__main__":
     IMAGES = inspect_bomb() # Capture images of all sides of the bomb.
     SIDE_PARTITIONS = partition_sides(IMAGES) # Split images into modules/side of bomb.
     # Identify features from the side of the bomb (indicators, batteries, serial number, etc.).
-    FEATURES, PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
-
-    SOLVERS = [ # Solvers for the different modules.
-        wire_solver, button_solver,
-        symbols_solver, simon_solver,
-        wire_seq_solver, compl_wires_solver,
-        memory_solver, whos_first_solver, maze_solver,
-        password_solver, morse_solver
-    ]
+    PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
 
     # Extract aforementioned features (read serial number, count num. of batteries, etc.).
     SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], SERIAL_MODEL)
@@ -405,4 +400,4 @@ if __name__ == "__main__":
     LIGHT_MONITOR = LightMonitor() # Monitor whether the light in the room has turned off.
 
     # Solve all modules. Back of the bomb first, then from the top, left to right.
-    solve_modules(PREDICTIONS[:12], SOLVERS, SIDE_FEATURES, SERIAL_MODEL, (TIME_STARTED, MINUTES, SECONDS))
+    solve_modules(PREDICTIONS[:12], SIDE_FEATURES, SERIAL_MODEL, (TIME_STARTED, MINUTES, SECONDS))
