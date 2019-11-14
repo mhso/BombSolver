@@ -1,6 +1,7 @@
 from time import sleep
 from glob import glob
 from sys import argv
+import os
 from cv2 import imwrite
 import inspect_modules
 import inspect_bomb
@@ -65,7 +66,9 @@ def process_module_data(images, predictions=None):
         if predictions is not None:
             label = predictions[i]
             if label in INCLUDED_MODULE_LABELS:
-                path = f"../resources/labeled_images/{label}/"
+                path = f"../resources/training_images/modules/{label}/"
+                if not os.path.exists(path):
+                    os.mkdir(path)
         else:
             path = f"../resources/training_images/modules/"
         if path is not None:
