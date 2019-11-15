@@ -175,9 +175,3 @@ def get_indicator_features(image, model):
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
     return lit, format_label([classifier.LABELS[p] for p in best_pred])
-
-def sleep_until_start():
-    while True:
-        if win_util.s_pressed():
-            break
-        sleep(0.1)
