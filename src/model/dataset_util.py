@@ -39,7 +39,7 @@ def reshape(cv2_img, size):
         img = img / 255
     return img
 
-def extract_test_data(images, labels, output_dim, cases_per_label=1):
+def extract_test_data(images, labels, output_dim, cases_per_label):
     test_images = []
     test_labels = []
     indexes = []
@@ -62,22 +62,23 @@ def extract_test_data(images, labels, output_dim, cases_per_label=1):
     return (np.array(train_images), np.array(train_labels),
             np.array(test_images), np.array(test_labels))
 
-def load_dataset(path, label_names):
+def load_dataset(path, label_names, data_dims, tests_per_label=4):
+    input_dim, output_dim = data_dims
     images = []
     labels = []
     for label, name in enumerate(label_names):
         files = glob(f"{path}{name}/*.png")
-        one_hot_labels = [0] * config.SERIAL_OUTPUT_DIM
+        one_hot_labels = [0] * output_dim
         one_hot_labels[label] = 1
         if len(files) == 0:
-            images.append(np.zeros(config.SERIAL_INPUT_DIM))
+            images.append(np.zeros(input_dim))
             labels.append(np.array(one_hot_labels))
         for file in files:
-            image = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
-            images.append(reshape(image, config.SERIAL_INPUT_DIM[1:]))
+            image = cv2.imread(file, cv2.IMREAD_COLOR)
+            images.append(reshape(image, input_dim[1:]))
             labels.append(np.array(one_hot_labels))
 
-    return extract_test_data(np.array(images), np.array(labels), config.SERIAL_OUTPUT_DIM, 4)
+    return extract_test_data(np.array(images), np.array(labels), output_dim, tests_per_label)
 
 def sample_data(images, labels, size):
     indices = [i for i in range(images.shape[0])]

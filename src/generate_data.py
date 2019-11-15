@@ -96,7 +96,7 @@ if "skip" not in argv:
 
 while INSPECTIONS:
     data = inspect_bomb.inspect()
-    PREDICTIONS = process_bomb_data(data, DATA_TYPE == "modules")
+    PREDICTIONS = process_bomb_data(data)
     if DATA_TYPE in ("modules", "both"):
         data, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_LABELS)
         process_module_data(data, FILTERED_PREDICTIONS)
