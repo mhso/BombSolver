@@ -1,10 +1,9 @@
 from time import sleep, time
 from sys import argv
 from math import floor
-from numpy import array
 from debug import log
 import windows_util as win_util
-from model import (module_classifier, serial_classifier, classifier_util, dataset_util)
+from model import (module_classifier, character_classifier, classifier_util, dataset_util)
 from model.grab_img import screenshot
 from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
                      wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
@@ -361,7 +360,7 @@ if __name__ == "__main__":
     MODEL = module_classifier.load_from_file("../resources/trained_models/module_model")
 
     # Load model for classifying letters (serial number, indicators, etc.).
-    SERIAL_MODEL = serial_classifier.load_from_file("../resources/trained_models/serial_model")
+    SERIAL_MODEL = character_classifier.load_from_file("../resources/trained_models/serial_model")
 
     log("Waiting for level selection...")
     log("Press S when a level has been selected.")

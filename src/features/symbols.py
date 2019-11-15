@@ -1,6 +1,6 @@
 import numpy as np
 from model import (dataset_util,
-                   serial_classifier as classifier,
+                   character_classifier as classifier,
                    classifier_util)
 import config
 

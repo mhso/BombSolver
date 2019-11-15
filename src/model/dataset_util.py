@@ -62,12 +62,11 @@ def extract_test_data(images, labels, output_dim, cases_per_label=1):
     return (np.array(train_images), np.array(train_labels),
             np.array(test_images), np.array(test_labels))
 
-def load_dataset(path, labels):
+def load_dataset(path, label_names):
     images = []
     labels = []
-    characters = [x for x in range(10)] + [chr(x) for x in range(97, 123)]
-    for label in range(config.SERIAL_OUTPUT_DIM):
-        files = glob(f"../resources/labeled_images/serial/{characters[label]}/*.png")
+    for label, name in enumerate(label_names):
+        files = glob(f"{path}{name}/*.png")
         one_hot_labels = [0] * config.SERIAL_OUTPUT_DIM
         one_hot_labels[label] = 1
         if len(files) == 0:

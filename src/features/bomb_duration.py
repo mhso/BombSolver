@@ -2,7 +2,7 @@ import math
 import numpy as np
 import cv2
 import config
-import model.serial_classifier as classifier
+import model.character_classifier as classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import windows_util as win_util

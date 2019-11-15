@@ -14,8 +14,7 @@ import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import config
 
-INCLUDED_BOMB_LABELS = (3, 5, 6)
-INCLUDED_MODULE_LABELS = (10, 11, 15, 16, 18)
+INCLUDED_LABELS = (3, 5, 6, 10, 11, 15, 16, 18)
 INSPECTIONS = -1
 if len(argv) > 1:
     if argv[1] in ("-h", "-help"):
@@ -42,7 +41,7 @@ def restart_level():
     win_util.click(int(SW * 0.55), int(SH * 0.53))
     sleep(0.5)
 
-def process_bomb_data(images, just_predict):
+def process_bomb_data(images):
     IMAGES_CAPTURED = 0
     predictions = []
     for img in images:
@@ -51,8 +50,9 @@ def process_bomb_data(images, just_predict):
         pred = classifier.predict(MODEL, resized)
         label = classifier_util.get_best_prediction(pred)[0]
         predictions.append(label)
-        if not just_predict:
-            path = f"../resources/training_images/modules/"
+        if label in INCLUDED_LABELS:
+            label_name = clean_file_path(classifier.LABELS[label])
+            path = f"../resources/training_images/modules/{label_name}"
             num_images = len(glob(path + "*.png"))
             imwrite(f"{path}{num_images:03d}.png", cv2_img)
             IMAGES_CAPTURED += 1
@@ -70,7 +70,7 @@ def process_module_data(images, predictions=None):
         path = None
         if predictions is not None:
             label = predictions[i]
-            if label in INCLUDED_MODULE_LABELS:
+            if label in INCLUDED_LABELS:
                 label_name = clean_file_path(classifier.LABELS[label])
                 path = f"../resources/training_images/modules/{label_name}/"
                 if not os.path.exists(path):
@@ -98,7 +98,7 @@ while INSPECTIONS:
     data = inspect_bomb.inspect()
     PREDICTIONS = process_bomb_data(data, DATA_TYPE == "modules")
     if DATA_TYPE in ("modules", "both"):
-        data, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_MODULE_LABELS)
+        data, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_LABELS)
         process_module_data(data, FILTERED_PREDICTIONS)
     if "skip" not in argv or INSPECTIONS > 1:
         restart_level()
