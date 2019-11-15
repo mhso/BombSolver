@@ -33,14 +33,31 @@ LABELS = [
     "Morse"
 ]
 
+# Layer constants.
+CONV_FILTERS = 32
+CONV_LAYERS = 4
+KERNEL_SIZE = 5
+USE_BIAS = False
+REGULARIZER_CONST = 0.001
+
+# Optimizer constants.
+LEARNING_RATE = 0.02
+MOMENTUM = 0.9
+WEIGHT_DECAY = 1e-4
+
+# Training constants.
+BATCH_SIZE = 128
+EPOCHS_PER_BATCH = 5
+VALIDATION_SPLIT = 0.3
+
 def output_layer(prev):
     out = Flatten()(prev)
 
-    out = Dense(292, kernel_regularizer=l2(config.REGULARIZER_CONST),
-                use_bias=config.USE_BIAS)(out)
+    out = Dense(292, kernel_regularizer=l2(REGULARIZER_CONST),
+                use_bias=USE_BIAS)(out)
 
-    out = Dense(config.OUTPUT_DIM, kernel_regularizer=l2(config.REGULARIZER_CONST),
-                use_bias=config.USE_BIAS)(out)
+    out = Dense(config.OUTPUT_DIM, kernel_regularizer=l2(REGULARIZER_CONST),
+                use_bias=USE_BIAS)(out)
     out = Activation("softmax")(out)
 
     return out
@@ -49,9 +66,9 @@ def save_as_image(model):
     plot_model(model, to_file='../resources/model_graph.png', show_shapes=True)
 
 def compile_model(model):
-    model.compile(optimizer=SGD(lr=config.LEARNING_RATE,
-                                decay=config.WEIGHT_DECAY,
-                                momentum=config.MOMENTUM),
+    model.compile(optimizer=SGD(lr=LEARNING_RATE,
+                                decay=WEIGHT_DECAY,
+                                momentum=MOMENTUM),
                   loss=[losses.categorical_crossentropy],
                   metrics=["accuracy"])
 
@@ -62,10 +79,10 @@ def build_model():
 
     layer = inp
 
-    layer = utils.conv_layer(layer, config.CONV_FILTERS, config.KERNEL_SIZE)
+    layer = utils.conv_layer(layer, CONV_FILTERS, KERNEL_SIZE, REGULARIZER_CONST)
 
-    for i in range(config.CONV_LAYERS):
-        layer = utils.conv_layer(layer, config.CONV_FILTERS, config.KERNEL_SIZE)
+    for i in range(CONV_LAYERS):
+        layer = utils.conv_layer(layer, CONV_FILTERS, KERNEL_SIZE, REGULARIZER_CONST)
         #if i % 3 == 0:
         #    layer = Dropout(0.3)(layer)
 
@@ -102,6 +119,6 @@ def predict(model, inp):
             return model[0].predict(shape_input(inp))
 
 def train(model, inputs, expected_out):
-    result = model.fit(inputs, expected_out, batch_size=config.MODULE_BATCH_SIZE, verbose=0,
-                       epochs=config.EPOCHS_PER_BATCH, validation_split=config.VALIDATION_SPLIT)
+    result = model.fit(inputs, expected_out, batch_size=BATCH_SIZE, verbose=0,
+                       epochs=EPOCHS_PER_BATCH, validation_split=VALIDATION_SPLIT)
     return result.history

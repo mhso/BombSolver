@@ -9,13 +9,28 @@ import model.classifier_util as utils
 
 LABELS = [str(x) for x in range(10)] + [chr(x) for x in range(97, 123)]
 
+# Layer constants.
+CONV_FILTERS = 32
+KERNEL_SIZE = 3
+REGULARIZER_CONST = 0.001
+
+# Optimizer constants.
+LEARNING_RATE = 0.02
+MOMENTUM = 0.9
+WEIGHT_DECAY = 1e-4
+
+# Training constants.
+BATCH_SIZE = 256
+EPOCHS_PER_BATCH = 10
+VALIDATION_SPLIT = 0.3
+
 def build_model():
     sess = utils.get_nn_config()
     graph = Graph()
     inp = Input(config.SERIAL_INPUT_DIM)
 
-    layer = utils.conv_layer(inp, 32, 3)
-    layer = utils.conv_layer(layer, 64, 3)
+    layer = utils.conv_layer(inp, CONV_FILTERS, KERNEL_SIZE, REGULARIZER_CONST)
+    layer = utils.conv_layer(layer, CONV_FILTERS*2, KERNEL_SIZE, REGULARIZER_CONST)
     layer = Dropout(0.25)(layer)
     layer = MaxPooling2D(pool_size=(2, 2), padding="same")(layer)
     layer = Dense(512, activation='relu')(layer)
@@ -34,14 +49,14 @@ def build_model():
 
 def compile_model(model):
     model.compile(loss=keras.losses.categorical_crossentropy,
-                  optimizer=SGD(lr=config.LEARNING_RATE,
-                                decay=config.WEIGHT_DECAY,
-                                momentum=config.MOMENTUM),
+                  optimizer=SGD(lr=LEARNING_RATE,
+                                decay=WEIGHT_DECAY,
+                                momentum=MOMENTUM),
                   metrics=['accuracy'])
 
 def train(model, inputs, expected_out):
-    result = model.fit(inputs, expected_out, batch_size=config.SERIAL_BATCH_SIZE,
-                       epochs=config.SERIAL_EPOCHS_PER_BATCH, verbose=0)
+    result = model.fit(inputs, expected_out, batch_size=BATCH_SIZE,
+                       epochs=EPOCHS_PER_BATCH, verbose=0)
     return result.history
 
 def evaluate(model, inputs, expected_out):

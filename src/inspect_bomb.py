@@ -1,4 +1,3 @@
-from sys import argv
 import main
 from debug import log
 

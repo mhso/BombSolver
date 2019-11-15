@@ -16,34 +16,11 @@ def get_threshold(img):
     #canny = cv2.Canny(thresh, cv2.MORPH_CLOSE, )
     return opening
 
-def bbox_most_left(img, offset):
-    a = np.where(img != 0)
-    bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.min(a[1])+offset
-    return bbox
-
 def eucl_dist(p1, p2):
     return math.sqrt(2 ** (p2[0] - p1[0]) + 2 ** (p2[1] - p1[1]))
 
 def mid_bbox(bbox):
     return (bbox[0] + (bbox[2]/2), bbox[1] + (bbox[3]/2))
-
-def connect_contours(contours, threshold):
-    result = []
-    for i, c_1 in enumerate(contours):
-        bbox1 = cv2.boundingRect(c_1)
-        mid_p1 = mid_bbox(bbox1)
-        new_contour = [c_1]
-        for j, c_2 in enumerate(contours):
-            if i != j:
-                bbox2 = cv2.boundingRect(c_2)
-                mid_p2 = mid_bbox(bbox2)
-                if eucl_dist(bbox1[:4], bbox2[:2]) < threshold:
-                    new_contour.append(c_2)
-                elif eucl_dist(bbox1[:2], bbox2[:4]) < threshold:
-                    new_contour.append(c_2)
-        result.append(new_contour)
-        contours.pop(i)
-    return result
 
 def largest_bounding_rect(contours):
     min_x = 9999
@@ -94,16 +71,6 @@ def get_characters():
             filtered_masks.append(mask)
     return filtered_masks
 
-def reshape_masks(masks):
-    resized_masks = []
-    for mask in masks:
-        reshaped = mask.reshape(mask.shape + (1,))
-        padded = dataset_util.pad_image(reshaped)
-        resized = dataset_util.resize_img(padded, config.SERIAL_INPUT_DIM[1:])
-        repeated = np.repeat(resized.reshape(((1,) + config.SERIAL_INPUT_DIM[1:])), 3, axis=0)
-        resized_masks.append(repeated)
-    return np.array(resized_masks)
-
 def format_time(prediction):
     if prediction[0] == "b":
         prediction[0] = 8
@@ -117,7 +84,7 @@ def get_bomb_duration(model):
     masks = get_characters()
     if len(masks) != 3:
         log(f"WARNING: Bomb duration string length != 3 (len={len(masks)}).", config.LOG_WARNING)
-    masks = reshape_masks(masks)
+    masks = np.array([dataset_util.reshape(mask, config.SERIAL_INPUT_DIM[1:]) for mask in masks])
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
     return format_time([classifier.LABELS[p] for p in best_pred])

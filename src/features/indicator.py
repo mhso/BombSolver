@@ -156,22 +156,12 @@ def get_characters(image):
         masks.reverse()
     return masks, bool(lit)
 
-def reshape_masks(masks):
-    resized_masks = []
-    for mask in masks:
-        reshaped = mask.reshape(mask.shape + (1,))
-        padded = dataset_util.pad_image(reshaped)
-        resized = dataset_util.resize_img(padded, config.SERIAL_INPUT_DIM[1:])
-        repeated = np.repeat(resized.reshape(((1,) + config.SERIAL_INPUT_DIM[1:])), 3, axis=0)
-        resized_masks.append(repeated)
-    return np.array(resized_masks)
-
 def format_label(prediction):
     return prediction[0] + prediction[1] + prediction[2]
 
 def get_indicator_features(image, model):
     masks, lit = get_characters(image)
-    masks = reshape_masks(masks)
-    prediction = classifier.predict(model, masks)
+    masks = [dataset_util.reshape(mask, config.SERIAL_INPUT_DIM[1:]) for mask in masks]
+    prediction = classifier.predict(model, np.array(masks))
     best_pred = classifier_util.get_best_prediction(prediction)
     return lit, format_label([classifier.LABELS[p] for p in best_pred])

@@ -33,14 +33,30 @@ def pad_image(img):
     h, w, c = img.shape
     dif = abs(h - w)
     if h > w:
-        left = np.zeros((h, ceil(dif/2), c), dtype="uint8")
-        right = np.zeros((h, floor(dif/2), c), dtype="uint8")
+        left = np.zeros((h, ceil(dif/2), c))
+        right = np.zeros((h, floor(dif/2), c))
         new_img = np.concatenate((left, img, right), 1)
     elif w > h:
-        left = np.zeros((ceil(dif/2), w, c), dtype="uint8")
-        right = np.zeros((floor(dif/2), w, c), dtype="uint8")
-        new_img = np.concatenate((left, img, right), 0)
+        up = np.zeros((ceil(dif/2), w, c))
+        down = np.zeros((floor(dif/2), w, c))
+        new_img = np.concatenate((up, img, down), 0)
     return new_img
+
+def reshape(cv2_img, size):
+    img = cv2_img
+    if len(cv2_img.shape) == 2:
+        img = img.reshape(img.shape + (1,))
+    _, _, c = img.shape
+    assert c in (3, 1)
+    img = pad_image(img)
+    img = resize_img(img, size)
+    img = img.reshape(((c,) + size))
+    if c == 1:
+        img = np.repeat(img, 3, axis=0)
+    img = img.astype("float32")
+    if np.any(img > 1):
+        img = img / 255
+    return img
 
 def sample_data(images, labels, size):
     indices = [i for i in range(images.shape[0])]

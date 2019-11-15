@@ -132,16 +132,6 @@ def get_characters(img):
     masks = rotate_masks(masks, alignment)
     return masks, alignment
 
-def reshape_masks(masks):
-    resized_masks = []
-    for mask in masks:
-        reshaped = mask.reshape(mask.shape + (1,))
-        padded = dataset_util.pad_image(reshaped)
-        resized = dataset_util.resize_img(padded, config.SERIAL_INPUT_DIM[1:])
-        repeated = np.repeat(resized.reshape(((1,) + config.SERIAL_INPUT_DIM[1:])), 3, axis=0)
-        resized_masks.append(repeated)
-    return np.array(resized_masks)
-
 def create_serial_string(predictions, alignment):
     result = ""
     for pred in predictions:
@@ -158,7 +148,7 @@ def get_serial_number(img, model):
     if not alignment:
         print("ERROR: Could not determine alignment of serial number")
         return None
-    masks = reshape_masks(masks)
+    masks = np.array([dataset_util.reshape(mask, config.SERIAL_INPUT_DIM[1:]) for mask in masks])
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
     return create_serial_string(best_pred, alignment) # Return actual string.
@@ -170,4 +160,3 @@ if __name__ == '__main__':
     for file in FILES:
         image = cv2.imread(file, cv2.IMREAD_COLOR)
         num = get_serial_number(image, SERIAL_MODEL)
-        print(num)

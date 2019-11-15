@@ -6,7 +6,6 @@ import model.serial_dataset as dataset
 from keras.utils import to_categorical
 from debug import log
 from numpy import where, array
-import config
 import cv2
 
 def calculate_accuracy(model, test_x, test_y):
@@ -14,7 +13,7 @@ def calculate_accuracy(model, test_x, test_y):
 
 def train_network(model, train_x, train_y, test_x, test_y, steps=500):
     for i in range(steps):
-        sample_images, sample_labels = dataset_util.sample_data(train_x, train_y, config.SERIAL_BATCH_SIZE)
+        sample_images, sample_labels = dataset_util.sample_data(train_x, train_y, classifier.BATCH_SIZE)
         result = classifier.train(MODEL, sample_images, sample_labels)
         acc = calculate_accuracy(MODEL, test_x, test_y)
         model_acc = result['acc'][-1]*100

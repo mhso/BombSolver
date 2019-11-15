@@ -9,19 +9,15 @@ from numpy import argmax
 import config
 
 def get_nn_config():
-    # Clean up from previous TF graphs.
-    #tf.reset_default_graph()
-    #clear_session()
-
     # Config options, to stop TF from eating all GPU memory.
     nn_config = tf.ConfigProto()
     nn_config.gpu_options.per_process_gpu_memory_fraction = config.MAX_GPU_FRACTION
     nn_config.gpu_options.allow_growth = True
     return tf.Session(config=nn_config)
 
-def conv_layer(prev, filters, kernel_size):
+def conv_layer(prev, filters, kernel_size, regularizer_const):
     conv = Conv2D(filters, kernel_size=(kernel_size, kernel_size), strides=1, padding="same",
-                  kernel_regularizer=l2(config.REGULARIZER_CONST))(prev)
+                  kernel_regularizer=l2(regularizer_const))(prev)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     return conv

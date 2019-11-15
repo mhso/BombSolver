@@ -128,13 +128,11 @@ def partition_sides(images):
     return (main_sides, short_sides, long_sides)
 
 def identify_side_features(sides, model):
-    predictions = [0] * config.OUTPUT_DIM
+    predictions = [0] * 32
     i = 0
     for side in sides:
         for img in side:
-            padded = dataset_util.pad_image(array(img))
-            reshaped = dataset_util.resize_img(padded, config.INPUT_DIM[1:])
-            converted = convert_to_cv2(reshaped) / 255
+            converted = dataset_util.reshape(convert_to_cv2(img), config.INPUT_DIM[1:])
             pred = module_classifier.predict(model, converted)
             predict_label = classifier_util.get_best_prediction(pred)[0]
             predictions[i] = predict_label

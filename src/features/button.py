@@ -24,9 +24,6 @@ def get_threshold(img, color):
     thresh = cv2.threshold(gray, thresh_values[color], 255, cv2.THRESH_BINARY_INV)[1]
     return thresh
 
-def mid_bbox(bbox):
-    return (bbox[0] + (bbox[2]/2), bbox[1] + (bbox[3]/2))
-
 def largest_bounding_rect(contours):
     min_x = 9999
     min_y = 9999
@@ -107,16 +104,6 @@ def get_characters(image):
     masks = get_masked_images(image, contours)
     return masks, color
 
-def reshape_masks(masks):
-    resized_masks = []
-    for mask in masks:
-        reshaped = mask.reshape(mask.shape + (1,))
-        padded = dataset_util.pad_image(reshaped)
-        resized = dataset_util.resize_img(padded, config.SERIAL_INPUT_DIM[1:])
-        repeated = np.repeat(resized.reshape(((1,) + config.SERIAL_INPUT_DIM[1:])), 3, axis=0)
-        resized_masks.append(repeated)
-    return np.array(resized_masks)
-
 def format_time(prediction):
     return prediction[0] + prediction[1] + prediction[2]
 
@@ -127,7 +114,7 @@ def get_button_features(image, model):
     elif len(masks) == 8:
         return "Detonate", color
     else:
-        masks = reshape_masks([masks[0]])
+        masks = np.array([dataset_util.reshape(masks[0], config.SERIAL_INPUT_DIM[1:])])
         prediction = classifier.predict(model, masks[0])
         best_pred = classifier_util.get_best_prediction(prediction)
         if classifier.LABELS[best_pred[0]] == "a":
