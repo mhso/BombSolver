@@ -11,7 +11,7 @@ def inspect(labels, labels_to_inspect):
         mod_index = module if module < 6 else module - 6
         if labels[module] in labels_to_inspect:
             main.select_module(mod_index)
-            sleep(0.5)
+            sleep(1)
             SC, _, _ = main.screenshot_module()
             images.append(SC)
             filtered_labels.append(labels[module])

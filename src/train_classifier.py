@@ -1,8 +1,10 @@
 from sys import argv
-import model.serial_classifier as classifier
+import model.module_classifier as module_classifier
+import model.serial_classifier as serial_classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
-import model.serial_dataset as dataset
+import model.module_dataset as module_dataset
+import model.serial_dataset as serial_dataset
 from debug import log
 
 def train_network(model, train_x, train_y, test_x, test_y, steps=500):
@@ -20,16 +22,19 @@ def train_network(model, train_x, train_y, test_x, test_y, steps=500):
         print(f"Step {i+1}/{steps} - Real acc: {acc:.3f}% - "
               + f"Training acc: {model_acc:.3f}% - Model loss: {model_loss}{save_string}")
 
-x_train, y_train, x_test, y_test = dataset.load_dataset()
-print(f"Loaded {len(x_train)} training datapoints.")
-print(f"Loaded {len(x_test)} testing datapoints.")
+
+
+log("Loading dataset...")
+X_TRAIN, Y_TRAIN, X_TEST, Y_TEST = dataset.load_dataset()
+log(f"Training datapoints: {len(X_TRAIN)}.")
+log(f"Testing datapoints:  {len(X_TEST)}.")
 
 FILE_PATH = "../resources/trained_models/serial_model"
 log("Building Neural Network model...")
 MODEL, _, _ = classifier.build_model()
 
 log("Training network...")
-train_network(MODEL, x_train, y_train, x_test, y_test)
+train_network(MODEL, X_TRAIN, Y_TRAIN, X_TEST, Y_TEST)
 
 log("Saving model to file...")
 classifier_util.save_to_file(MODEL, FILE_PATH)

@@ -47,7 +47,7 @@ def process_bomb_data(images, just_predict):
     predictions = []
     for img in images:
         cv2_img = convert_to_cv2(img)
-        resized = dataset_util.resize_img(dataset_util.pad_image(cv2_img), config.INPUT_DIM[1:])
+        resized = dataset_util.reshape(cv2_img, config.INPUT_DIM[1:])
         pred = classifier.predict(MODEL, resized)
         label = classifier_util.get_best_prediction(pred)[0]
         predictions.append(label)
@@ -60,6 +60,9 @@ def process_bomb_data(images, just_predict):
     log(f"Captured {IMAGES_CAPTURED} bomb images.")
     return predictions
 
+def clean_file_path(path):
+    return path.replace("?", "").replace("'", "").replace(" ", "_").lower()
+
 def process_module_data(images, predictions=None):
     IMAGES_CAPTURED = 0
     for i, img in enumerate(images):
@@ -68,7 +71,8 @@ def process_module_data(images, predictions=None):
         if predictions is not None:
             label = predictions[i]
             if label in INCLUDED_MODULE_LABELS:
-                path = f"../resources/training_images/modules/{classifier.LABELS[label]}/"
+                label_name = clean_file_path(classifier.LABELS[label])
+                path = f"../resources/training_images/modules/{label_name}/"
                 if not os.path.exists(path):
                     os.mkdir(path)
         else:
@@ -92,11 +96,10 @@ if "skip" not in argv:
 
 while INSPECTIONS:
     data = inspect_bomb.inspect()
-    predictions = process_bomb_data(data, DATA_TYPE == "modules")
-    print(predictions)
+    PREDICTIONS = process_bomb_data(data, DATA_TYPE == "modules")
     if DATA_TYPE in ("modules", "both"):
-        data, filtered_predictions = inspect_modules.inspect(predictions, INCLUDED_MODULE_LABELS)
-        process_module_data(data, filtered_predictions)
+        data, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_MODULE_LABELS)
+        process_module_data(data, FILTERED_PREDICTIONS)
     if "skip" not in argv or INSPECTIONS > 1:
         restart_level()
     INSPECTIONS -= 1

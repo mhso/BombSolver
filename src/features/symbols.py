@@ -5,12 +5,12 @@ from model import (dataset_util,
 import config
 
 def get_threshold(image):
-    pass
+    return image
 
 def crop_and_split_img(img):
     coords = [
         (50, 40), (50, 90),
-        (150, 40) (150, 90)
+        (150, 40), (150, 90)
     ] # Change later.
     w = 50
     h = 50

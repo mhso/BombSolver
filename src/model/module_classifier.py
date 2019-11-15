@@ -15,7 +15,7 @@ LABELS = [
     "Big battery",
     "Small batteries",
     "Serial number",
-    "Metal piece without parallel port",
+    "Metal piece",
     "Parallel port",
     "Indicator",
     "Nothing (Front)",

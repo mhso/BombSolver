@@ -11,7 +11,7 @@ def load_dataset():
         files = glob(f"../resources/labeled_images/modules/{label}/*.png")
         one_hot_labels = [0] * config.OUTPUT_DIM
         one_hot_labels[label] = 1
-        for i, file in enumerate(files):
+        for file in files:
             image = cv2.imread(file, cv2.IMREAD_COLOR)
             reshaped = image.reshape(config.INPUT_DIM).astype("float32")
             reshaped /= 255
