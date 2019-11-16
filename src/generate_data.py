@@ -46,7 +46,7 @@ def process_bomb_data(images):
     predictions = []
     for img in images:
         cv2_img = convert_to_cv2(img)
-        resized = dataset_util.reshape(cv2_img, config.INPUT_DIM[1:])
+        resized = dataset_util.reshape(cv2_img, config.MODULE_INPUT_DIM[1:])
         pred = classifier.predict(MODEL, resized)
         label = classifier_util.get_best_prediction(pred)[0]
         predictions.append(label)

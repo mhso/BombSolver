@@ -131,7 +131,7 @@ def identify_side_features(sides, model):
     i = 0
     for side in sides:
         for img in side:
-            converted = dataset_util.reshape(convert_to_cv2(img), config.INPUT_DIM[1:])
+            converted = dataset_util.reshape(convert_to_cv2(img), config.MODULE_INPUT_DIM[1:])
             pred = module_classifier.predict(model, converted)
             predict_label = classifier_util.get_best_prediction(pred)[0]
             predictions[i] = predict_label
@@ -162,7 +162,7 @@ def extract_serial_number_features(serial_num):
     features["contains_vowel"] = serial_contains_vowel(serial_num)
     return features
 
-def extract_side_features(sides, labels, serial_model):
+def extract_side_features(sides, labels, character_model):
     index = 0
     features = {
         "indicators" : [],
@@ -177,7 +177,7 @@ def extract_side_features(sides, labels, serial_model):
             elif labels[index] == 2:
                 features["batteries"] += 2
             elif labels[index] == 3: # Serial number.
-                serial_num = get_serial_number(cv2_img, serial_model)
+                serial_num = get_serial_number(cv2_img, character_model)
                 if serial_num is None:
                     log(f"Serial number could not be determined.", config.LOG_WARNING)
                     index += 1
@@ -189,7 +189,7 @@ def extract_side_features(sides, labels, serial_model):
             elif labels[index] == 5: # Parallel port.
                 features["parallel_port"] = True
             elif labels[index] == 6: # Indicator of some kind.
-                lit, text = get_indicator_features(cv2_img, serial_model)
+                lit, text = get_indicator_features(cv2_img, character_model)
                 desc = "lit_" + text if lit else "unlit_" + text
                 features["indicators"].append(desc)
             index += 1
@@ -212,8 +212,6 @@ def deselect_module(module):
     start_y = SH * 0.35
     offset_x = 300
     offset_y = 300
-    x = int(start_x + ((module % 3) * offset_x))
-    y = int(start_y + ((module // 3) * offset_y))
     win_util.click(300, 300, btn="right")
     sleep(1)
 
@@ -247,9 +245,9 @@ def solve_wires(image, mod_pos, side_features):
     sleep(0.5)
     win_util.click(mod_x + wire_x, mod_y + wire_y)
 
-def solve_button(image, mod_pos, side_features, serial_model, duration):
+def solve_button(image, mod_pos, side_features, character_model, duration):
     mod_x, mod_y = mod_pos
-    hold = button_solver.solve(image, side_features, serial_model)
+    hold = button_solver.solve(image, side_features, character_model)
     log(f"Hold button: {hold}", config.LOG_DEBUG)
     button_x, button_y = mod_x + 125, mod_y + 175
     if not hold:
@@ -315,15 +313,15 @@ def solve_morse(image, mod_pos):
         sleep(0.3)
     win_util.click(button_x, button_y)
 
-def solve_symbols(image, mod_pos, solver):
+def solve_symbols(image, mod_pos, char_model):
     mod_x, mod_y = mod_pos
-    coords = symbols_solver.solve(image)
+    coords = symbols_solver.solve(image, char_model)
     for y, x in coords:
         win_util.click(mod_x + x, mod_y + y)
         sleep(0.5)
 
-def solve_modules(modules, side_features, serial_model, duration):
-    dont_solve = []
+def solve_modules(modules, side_features, character_model, duration):
+    dont_solve = [11]
     for module, label in enumerate(modules[:12]):
         mod_index = module if module < 6 else module - 6
         if label > 8:
@@ -335,7 +333,9 @@ def solve_modules(modules, side_features, serial_model, duration):
             if label == 9 and label not in dont_solve: # Wires.
                 solve_wires(cv2_img, mod_pos, side_features)
             elif label == 10 and label not in dont_solve: # Button.
-                solve_button(cv2_img, mod_pos, side_features, serial_model, duration)
+                solve_button(cv2_img, mod_pos, side_features, character_model, duration)
+            elif label == 11 and label not in dont_solve: # Symbols.
+                solve_symbols(cv2_img, mod_pos, character_model)
             elif label == 12 and label not in dont_solve: # Simon Says.
                 solve_simon(cv2_img, mod_pos, side_features)
             elif label == 13 and label not in dont_solve: # Wire Sequence.
@@ -360,7 +360,7 @@ if __name__ == "__main__":
     MODEL = module_classifier.load_from_file("../resources/trained_models/module_model")
 
     # Load model for classifying letters (serial number, indicators, etc.).
-    SERIAL_MODEL = character_classifier.load_from_file("../resources/trained_models/serial_model")
+    SERIAL_MODEL = character_classifier.load_from_file("../resources/trained_models/character_model")
 
     log("Waiting for level selection...")
     log("Press S when a level has been selected.")

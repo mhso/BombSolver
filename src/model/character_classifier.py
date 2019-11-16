@@ -27,7 +27,7 @@ VALIDATION_SPLIT = 0.3
 def build_model():
     sess = utils.get_nn_config()
     graph = Graph()
-    inp = Input(config.SERIAL_INPUT_DIM)
+    inp = Input(config.CHAR_INPUT_DIM)
 
     layer = utils.conv_layer(inp, CONV_FILTERS, KERNEL_SIZE, REGULARIZER_CONST)
     layer = utils.conv_layer(layer, CONV_FILTERS*2, KERNEL_SIZE, REGULARIZER_CONST)
@@ -38,7 +38,7 @@ def build_model():
     layer = Flatten()(layer)
     layer = Dense(256, activation='relu')(layer)
     layer = Dropout(0.5)(layer)
-    out = Dense(config.SERIAL_OUTPUT_DIM, activation='softmax')(layer)
+    out = Dense(config.CHAR_OUTPUT_DIM, activation='softmax')(layer)
 
     model = Model(inputs=inp, outputs=out)
 
@@ -76,7 +76,7 @@ def load_from_file(filename):
 def shape_input(inp):
     reshaped = inp
     if len(inp.shape) < 4:
-        reshaped = inp.reshape((1,)+config.SERIAL_INPUT_DIM)
+        reshaped = inp.reshape((1,)+config.CHAR_INPUT_DIM)
     return reshaped
 
 def predict(model, inp):

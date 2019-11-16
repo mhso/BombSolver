@@ -56,7 +56,7 @@ def output_layer(prev):
     out = Dense(292, kernel_regularizer=l2(REGULARIZER_CONST),
                 use_bias=USE_BIAS)(out)
 
-    out = Dense(config.OUTPUT_DIM, kernel_regularizer=l2(REGULARIZER_CONST),
+    out = Dense(config.MODULE_OUTPUT_DIM, kernel_regularizer=l2(REGULARIZER_CONST),
                 use_bias=USE_BIAS)(out)
     out = Activation("softmax")(out)
 
@@ -75,7 +75,7 @@ def compile_model(model):
 def build_model():
     sess = utils.get_nn_config()
     graph = tf.Graph()
-    inp = Input(config.INPUT_DIM)
+    inp = Input(config.MODULE_INPUT_DIM)
 
     layer = inp
 
@@ -96,7 +96,7 @@ def build_model():
 def shape_input(inp):
     reshaped = inp
     if len(inp.shape) < 4:
-        reshaped = inp.reshape((1,)+config.INPUT_DIM)
+        reshaped = inp.reshape((1,)+config.MODULE_INPUT_DIM)
     return reshaped
 
 def load_from_file(filename):

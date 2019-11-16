@@ -114,7 +114,7 @@ def get_button_features(image, model):
     elif len(masks) == 8:
         return "Detonate", color
     else:
-        masks = np.array([dataset_util.reshape(masks[0], config.SERIAL_INPUT_DIM[1:])])
+        masks = np.array([dataset_util.reshape(masks[0], config.CHAR_INPUT_DIM[1:])])
         prediction = classifier.predict(model, masks[0])
         best_pred = classifier_util.get_best_prediction(prediction)
         if classifier.LABELS[best_pred[0]] == "a":

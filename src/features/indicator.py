@@ -161,7 +161,7 @@ def format_label(prediction):
 
 def get_indicator_features(image, model):
     masks, lit = get_characters(image)
-    masks = [dataset_util.reshape(mask, config.SERIAL_INPUT_DIM[1:]) for mask in masks]
+    masks = [dataset_util.reshape(mask, config.CHAR_INPUT_DIM[1:]) for mask in masks]
     prediction = classifier.predict(model, np.array(masks))
     best_pred = classifier_util.get_best_prediction(prediction)
     return lit, format_label([classifier.LABELS[p] for p in best_pred])

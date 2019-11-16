@@ -148,14 +148,14 @@ def get_serial_number(img, model):
     if not alignment:
         print("ERROR: Could not determine alignment of serial number")
         return None
-    masks = np.array([dataset_util.reshape(mask, config.SERIAL_INPUT_DIM[1:]) for mask in masks])
+    masks = np.array([dataset_util.reshape(mask, config.CHAR_INPUT_DIM[1:]) for mask in masks])
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
     return create_serial_string(best_pred, alignment) # Return actual string.
 
 if __name__ == '__main__':
     FILES = glob("../resources/training_images/serial/test/*.png")
-    SERIAL_MODEL = classifier.load_from_file("../resources/trained_models/serial_model")
+    SERIAL_MODEL = classifier.load_from_file("../resources/trained_models/character_model")
     classifier.compile_model(SERIAL_MODEL)
     for file in FILES:
         image = cv2.imread(file, cv2.IMREAD_COLOR)

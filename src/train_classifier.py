@@ -23,13 +23,13 @@ def train_network(model, classifier, path, train_x, train_y, test_x, test_y, ste
 MODEL_SPECIFIC_VALUES = {
     "modules" : (
         module_classifier,
-        [x for x in range(config.OUTPUT_DIM)],
-        (config.INPUT_DIM, config.OUTPUT_DIM)
+        [x for x in range(config.MODULE_OUTPUT_DIM)],
+        (config.MODULE_INPUT_DIM, config.MODULE_OUTPUT_DIM)
     ),
     "characters" : (
         character_classifier,
         [x for x in range(10)] + [chr(x) for x in range(97, 123)],
-        (config.SERIAL_INPUT_DIM, config.SERIAL_OUTPUT_DIM)
+        (config.CHAR_INPUT_DIM, config.CHAR_OUTPUT_DIM)
     )
 }
 

@@ -84,7 +84,7 @@ def get_bomb_duration(model):
     masks = get_characters()
     if len(masks) != 3:
         log(f"WARNING: Bomb duration string length != 3 (len={len(masks)}).", config.LOG_WARNING)
-    masks = np.array([dataset_util.reshape(mask, config.SERIAL_INPUT_DIM[1:]) for mask in masks])
+    masks = np.array([dataset_util.reshape(mask, config.CHAR_INPUT_DIM[1:]) for mask in masks])
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
     return format_time([classifier.LABELS[p] for p in best_pred])

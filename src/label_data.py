@@ -24,9 +24,9 @@ def label_img(img, label, data_type):
             indicator_path = "../resources/training_images/indicators/images/"
             index = len(glob(indicator_path + "*.png"))
             cv2.imwrite(f"{indicator_path}{index:03d}.png", img)
-        resized = dataset_util.resize_img(padded, (config.INPUT_DIM[1], config.INPUT_DIM[2]))
+        resized = dataset_util.resize_img(padded, (config.MODULE_INPUT_DIM[1], config.MODULE_INPUT_DIM[2]))
     elif data_type == "serial":
-        resized = dataset_util.resize_img(padded, (config.SERIAL_INPUT_DIM[1], config.SERIAL_INPUT_DIM[2]))
+        resized = dataset_util.resize_img(padded, (config.CHAR_INPUT_DIM[1], config.CHAR_INPUT_DIM[2]))
     cv2.imwrite(name, resized)
     new_len = len(glob(path + "*.png"))
     if new_len == img_index:
