@@ -10,11 +10,6 @@ import windows_util as win_util
 import features.util as features_util
 from debug import log
 
-def bbox_thing(img):
-    a = np.where(np.any(img[:, :, 2].any() > 150) and np.any(img[:, :, 2] < 180))
-    bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
-    return bbox
-
 def indicator_bbox(img):
     a = np.where(img != 0)
     bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
