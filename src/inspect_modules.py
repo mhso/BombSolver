@@ -5,8 +5,8 @@ import windows_util as win_util
 def inspect(labels, labels_to_inspect):
     SW, SH = win_util.get_screen_size()
 
-    images = []
     filtered_labels = []
+    images = []
     for module in range(12):
         mod_index = module if module < 6 else module - 6
         if labels[module] in labels_to_inspect:

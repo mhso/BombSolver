@@ -1,6 +1,7 @@
 from sys import argv
 import model.module_classifier as module_classifier
 import model.character_classifier as character_classifier
+import model.symbol_classifier as symbol_classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import config
@@ -30,6 +31,11 @@ MODEL_SPECIFIC_VALUES = {
         character_classifier,
         [x for x in range(10)] + [chr(x) for x in range(97, 123)],
         (config.CHAR_INPUT_DIM, config.CHAR_OUTPUT_DIM)
+    ),
+    "symbols" : (
+        symbol_classifier,
+        [x for x in range(config.SYMBOLS_OUTPUT_DIM)],
+        (config.SYMBOLS_INPUT_DIM, config.SYMBOLS_OUTPUT_DIM)
     )
 }
 

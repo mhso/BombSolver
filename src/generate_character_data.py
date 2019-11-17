@@ -8,15 +8,6 @@ import config
 
 config.VERBOSITY = 1
 
-if len(argv) == 1:
-    print("Please provide a data type to generate.")
-    exit(0)
-
-DATA_TYPE = argv[1]
-DEL_IMAGES = True
-if len(argv) > 2:
-    DEL_IMAGES = int(argv[2]) == 1
-
 FEATURE_EXTRACTORS = {
     "serial_number" : serial_number,
     "indicator" : indicator,
@@ -24,7 +15,16 @@ FEATURE_EXTRACTORS = {
     "symbols" : symbols
 }
 
-INPUT_PATH = "../resources/training_images/modules/" + DATA_TYPE
+if len(argv) == 1 or argv[1] in "-h, -help":
+    print(f"Usage: python generate_character_data.py [type ({'|'.join(FEATURE_EXTRACTORS.keys())})] [delete_images]")
+    exit(0)
+
+DATA_TYPE = argv[1]
+DEL_IMAGES = True
+if len(argv) > 2:
+    DEL_IMAGES = int(argv[2]) == 1
+
+INPUT_PATH = "../resources/training_images/" + DATA_TYPE
 OUTPUT_PATH = f"{INPUT_PATH}/generated_data/"
 
 NUM_IMAGES = len(glob(OUTPUT_PATH + "*.png"))

@@ -7,7 +7,7 @@ import config
 
 def get_threshold(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    thresh = cv2.threshold(gray, 40, 255, cv2.THRESH_BINARY_INV)[1]
+    thresh = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY_INV)[1]
     return thresh
 
 def crop_and_split_img(img):

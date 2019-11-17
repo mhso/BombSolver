@@ -5,6 +5,7 @@ import cv2
 import config
 import model.dataset_util as dataset_util
 from model.module_classifier import LABELS as MODULE_LABELS
+from model.symbol_classifier import LABELS as SYMBOL_LABELS
 
 def label_img(img, label, data_type):
     path = f"../resources/labeled_images/{data_type}/{label}/"
@@ -13,37 +14,52 @@ def label_img(img, label, data_type):
     img_index = len(glob(path + "*.png"))
     name = f"{path}{img_index:03d}.png"
 
-    resized = None
-    padded = dataset_util.pad_image(img)
+    reshaped = dataset_util.pad_image(img)
     if data_type == "modules":
         if label == 3:
-            serial_path = "../resources/training_images/serial/images/"
+            serial_path = "../resources/training_images/serial_number/"
             index = len(glob(serial_path + "*.png"))
             cv2.imwrite(f"{serial_path}{index:03d}.png", img)
         elif label == 6:
-            indicator_path = "../resources/training_images/indicators/images/"
+            indicator_path = "../resources/training_images/indicator/"
             index = len(glob(indicator_path + "*.png"))
             cv2.imwrite(f"{indicator_path}{index:03d}.png", img)
-        resized = dataset_util.resize_img(padded, (config.MODULE_INPUT_DIM[1], config.MODULE_INPUT_DIM[2]))
-    elif data_type == "serial":
-        resized = dataset_util.resize_img(padded, (config.CHAR_INPUT_DIM[1], config.CHAR_INPUT_DIM[2]))
-    cv2.imwrite(name, resized)
+        reshaped = dataset_util.resize_img(reshaped, config.MODULE_INPUT_DIM[1:])
+    elif data_type == "characters":
+        reshaped = dataset_util.resize_img(reshaped, config.CHAR_INPUT_DIM[1:])
+    elif data_type == "symbols":
+        reshaped = dataset_util.resize_img(reshaped, config.SYMBOLS_INPUT_DIM[1:])
+    cv2.imwrite(name, reshaped)
     new_len = len(glob(path + "*.png"))
     if new_len == img_index:
         return False
     return True
 
+VALID_TYPES = ("characters", "modules", "symbols")
 if len(argv) == 1:
-    print("Need to specify data type!")
+    print(f"Need to specify data type! Valid types: {VALID_TYPES}.")
     exit(0)
 
 DATA_TYPE = argv[1]
+if DATA_TYPE not in VALID_TYPES:
+    print("Invalid data type! Valid types: {POSSIBLE_TYPES}.")
+    exit(0)
 
-FILES = glob(f"../resources/training_images/{DATA_TYPE}/*.png")
-if len(FILES) == 0:
+if DATA_TYPE == "characters":
+    FOLDERS = ("button", "indicator", "serial_number", "timer")
+    FILES = []
+    for folder in FOLDERS:
+        FILES = FILES + glob(f"../resources/training_images/{folder}/generated_data/*.png")
+elif DATA_TYPE == "symbols":
+    FILES = glob(f"../resources/training_images/symbols/generated_data/*.png")
+else:
+    FILES = glob(f"../resources/training_images/*.png")
+if FILES == []:
     print("No data to label, exiting...")
     exit(0)
+
 cv2.namedWindow("Data labeling")
+
 for i, file in enumerate(FILES):
     img = cv2.imread(file, cv2.IMREAD_COLOR)
     cv2.destroyWindow("Data labeling")
@@ -57,14 +73,14 @@ for i, file in enumerate(FILES):
     key_val = chr(key)
     label = key_val
     label_desc = label
-    if DATA_TYPE == "modules":
+    if DATA_TYPE in ("modules", "symbols"):
         while True:
             key = cv2.waitKey(0)
             if key == ord("c"):
                 break
             key_val += chr(key)
         label = int(key_val)
-        label_desc = MODULE_LABELS[label]
+        label_desc = MODULE_LABELS[label] if DATA_TYPE == "modules" else SYMBOL_LABELS[label]
     success = label_img(img, label, DATA_TYPE)
     if not success:
         print("ERROR: Image overwritten!")

@@ -1,7 +1,7 @@
 import features.symbols as symbols_features
 import cv2
 
-img = cv2.imread("../resources/training_images/modules/symbols/000.png", cv2.IMREAD_COLOR)
+img = cv2.imread("../resources/training_images/symbols/013.png", cv2.IMREAD_COLOR)
 
 symbols, _ = symbols_features.get_characters(img)
 

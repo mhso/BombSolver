@@ -14,12 +14,12 @@ import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import config
 
-INCLUDED_LABELS = (3, 5, 6, 10, 11, 15, 16, 18)
+INCLUDED_LABELS = (3, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
 INSPECTIONS = -1
 if len(argv) > 1:
     if argv[1] in ("-h", "-help"):
         print("Usage: python generate_data.py " +
-              "[inspections] [type (bomb|modules|both)] [auto_label]")
+              "[inspections] [type (modules|bomb|both)] [auto_label]")
         exit(0)
     INSPECTIONS = int(argv[1])
 DATA_TYPE = argv[2] if len(argv) > 2 else "bomb"
@@ -50,9 +50,11 @@ def process_bomb_data(images):
         pred = classifier.predict(MODEL, resized)
         label = classifier_util.get_best_prediction(pred)[0]
         predictions.append(label)
-        if label in INCLUDED_LABELS:
-            label_name = clean_file_path(classifier.LABELS[label])
-            path = f"../resources/training_images/modules/{label_name}"
+        if label in INCLUDED_LABELS and DATA_TYPE != "modules":
+            path = f"../resources/training_images/"
+            if label < 7:
+                label_name = clean_file_path(classifier.LABELS[label])
+                path = f"{path}{label_name}/"
             num_images = len(glob(path + "*.png"))
             imwrite(f"{path}{num_images:03d}.png", cv2_img)
             IMAGES_CAPTURED += 1
@@ -72,11 +74,11 @@ def process_module_data(images, predictions=None):
             label = predictions[i]
             if label in INCLUDED_LABELS:
                 label_name = clean_file_path(classifier.LABELS[label])
-                path = f"../resources/training_images/modules/{label_name}/"
+                path = f"../resources/training_images/{label_name}/"
                 if not os.path.exists(path):
                     os.mkdir(path)
         else:
-            path = f"../resources/training_images/modules/"
+            path = f"../resources/training_images/"
         if path is not None:
             num_images = len(glob(path + "*.png"))
             imwrite(f"{path}{num_images:03d}.png", cv2_img)
@@ -90,14 +92,15 @@ log(f"Running {inspect_str} times.")
 log("Waiting for user to press S")
 main.sleep_until_start()
 
-if "skip" not in argv:
-    main.start_level()
+while INSPECTIONS:
+    if "skip" not in argv:
+        main.start_level()
     main.await_level_start()
 
-while INSPECTIONS:
     data = inspect_bomb.inspect()
     PREDICTIONS = process_bomb_data(data)
     if DATA_TYPE in ("modules", "both"):
+        PREDICTIONS = PREDICTIONS[:12]
         data, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_LABELS)
         process_module_data(data, FILTERED_PREDICTIONS)
     if "skip" not in argv or INSPECTIONS > 1:
