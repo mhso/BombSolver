@@ -28,6 +28,11 @@ def crop_and_split_img(img):
 def mid_bbox(bbox):
     return (bbox[0] + (bbox[2]/2), bbox[1] + (bbox[3]/2))
 
+def crop_to_symbol(img):
+    a = np.where(img != 0)
+    min_y, max_y, min_x, max_x = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
+    return img[min_y:max_y, min_x:max_x]
+
 def segment_image(img):
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     min_y = 10000
@@ -38,8 +43,11 @@ def segment_image(img):
             min_y = mid_y
             min_cont = i
     contours.pop(min_cont)
+
     mask = np.zeros(img.shape, dtype="uint8")
     cv2.drawContours(mask, contours, -1, (255, 255, 255), -1)
+    mask = crop_to_symbol(mask)
+
     return mask
 
 def get_characters(img):

@@ -49,6 +49,7 @@ WEIGHT_DECAY = 1e-4
 BATCH_SIZE = 128
 EPOCHS_PER_BATCH = 5
 VALIDATION_SPLIT = 0.3
+TESTS_PER_LABEL = 4
 
 def output_layer(prev):
     out = Flatten()(prev)

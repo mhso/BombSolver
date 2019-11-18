@@ -6,6 +6,7 @@ import config
 import model.character_classifier as classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
+import features.util as features_util
 from debug import log
 
 def serial_bounding_box(img):
@@ -68,23 +69,6 @@ def get_segmented_image(img):
 
     return copy, contours, alignment
 
-def largest_bounding_rect(contours):
-    min_x = 9999
-    min_y = 9999
-    max_x = 0
-    max_y = 0
-    for c in contours:
-        x, y, w, h = cv2.boundingRect(c)
-        if x < min_x:
-            min_x = x
-        if y < min_y:
-            min_y = y
-        if x+w > max_x:
-            max_x = x+w
-        if y+h > max_y:
-            max_y = y+h
-    return (min_x, min_y, max_x, max_y)
-
 def get_masked_images(image, contours):
     mask = np.zeros(image.shape[:2])
 
@@ -98,23 +82,15 @@ def get_masked_images(image, contours):
             filtered_contours.append(c)
 
     masks = []
-    curr_contours = []
-    sub_mask = mask.copy()
-    for i, c in enumerate(filtered_contours):
-        x, y, w, h = cv2.boundingRect(c)
-        mid_y = y + (h/2)
-        next_y = -1
-        if i < len(filtered_contours) - 1:
-            x2, y2, w2, h2 = cv2.boundingRect(filtered_contours[i+1])
-            next_y = y2 + (h2/2)
-        curr_contours.append(c)
-        if next_y == -1 or abs(mid_y - next_y) > 20:
-            cv2.drawContours(sub_mask, curr_contours, -1, (255, 255, 255), -1)
-            x1, y1, x2, y2 = largest_bounding_rect(curr_contours)
-            curr_contours = []
-            cropped = sub_mask[y1:y2, x1:x2]
-            masks.append(cropped)
-            sub_mask = mask.copy()
+    united_contours = features_util.unite_contours(filtered_contours, 20)
+
+    for c in united_contours:
+        sub_mask = mask.copy()
+        cv2.drawContours(sub_mask, c, -1, (255, 255, 255), -1)
+        x1, y1, w, h = features_util.largest_bounding_rect(c)
+        cropped = sub_mask[y1:y1+h, x1:x1+w]
+        masks.append(cropped)
+
     return masks
 
 def rotate_masks(masks, alignment):

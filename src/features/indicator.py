@@ -26,9 +26,6 @@ def get_threshold(img):
     thresh = cv2.threshold(inverted, 50, 255, cv2.THRESH_BINARY_INV)[1]
     return thresh, bbox
 
-def mid_bbox(bbox):
-    return (bbox[0] + (bbox[2]/2), bbox[1] + (bbox[3]/2))
-
 def largest_bounding_rect(contours):
     min_x = 9999
     min_y = 9999

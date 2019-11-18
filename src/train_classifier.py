@@ -51,7 +51,7 @@ CLASSIFIER, LABEL_NAMES, DATA_DIMS = MODEL_SPECIFIC_VALUES[DATA_TYPE]
 
 log("Loading dataset...")
 X_TRAIN, Y_TRAIN, X_TEST, Y_TEST = dataset_util.load_dataset(
-    DATASET_PATH, LABEL_NAMES, DATA_DIMS
+    DATASET_PATH, LABEL_NAMES, DATA_DIMS, CLASSIFIER.TESTS_PER_LABEL
 )
 log(f"Training datapoints: {len(X_TRAIN)}.")
 log(f"Testing datapoints:  {len(X_TEST)}.")

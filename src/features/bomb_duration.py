@@ -5,6 +5,7 @@ import config
 import model.character_classifier as classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
+import features.util as features_util
 import windows_util as win_util
 from debug import log
 from model.grab_img import screenshot
@@ -13,14 +14,7 @@ def get_threshold(img):
     gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
     thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)[1]
     opening = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((2, 2), dtype="uint8"), iterations=1)
-    #canny = cv2.Canny(thresh, cv2.MORPH_CLOSE, )
     return opening
-
-def eucl_dist(p1, p2):
-    return math.sqrt(2 ** (p2[0] - p1[0]) + 2 ** (p2[1] - p1[1]))
-
-def mid_bbox(bbox):
-    return (bbox[0] + (bbox[2]/2), bbox[1] + (bbox[3]/2))
 
 def largest_bounding_rect(contours):
     min_x = 9999
@@ -45,7 +39,7 @@ def get_characters():
     img = cv2.cvtColor(np.array(sc), cv2.COLOR_RGB2BGR)
     thresh = get_threshold(img)
     _, contours, _ = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
-    contours.sort(key=lambda c: mid_bbox(cv2.boundingRect(c)))
+    contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c)))
     mask = np.zeros(thresh.shape[:2])
     masks = []
     curr_contours = []

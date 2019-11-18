@@ -51,6 +51,7 @@ WEIGHT_DECAY = 1e-4
 BATCH_SIZE = 256
 EPOCHS_PER_BATCH = 10
 VALIDATION_SPLIT = 0.3
+TESTS_PER_LABEL = 1
 
 def build_model():
     sess = utils.get_nn_config()

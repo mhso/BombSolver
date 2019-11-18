@@ -320,6 +320,9 @@ def solve_symbols(image, mod_pos, char_model):
         win_util.click(mod_x + x, mod_y + y)
         sleep(0.5)
 
+def solve_maze(image, mod_pos):
+    return 0
+
 def solve_modules(modules, side_features, character_model, duration):
     dont_solve = [11]
     for module, label in enumerate(modules[:12]):
@@ -342,6 +345,8 @@ def solve_modules(modules, side_features, character_model, duration):
                 solve_wire_sequence(cv2_img, mod_pos)
             elif label == 14 and label not in dont_solve: # Complicated Wires.
                 solve_complicated_wires(cv2_img, mod_pos, side_features)
+            elif label == 17 and label not in dont_solve: # Maze.
+                solve_maze(cv2_img, mod_pos)
             elif label == 19 and label not in dont_solve: # Morse.
                 solve_morse(cv2_img, mod_pos)
             sleep(0.5)

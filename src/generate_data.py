@@ -14,16 +14,17 @@ import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import config
 
-INCLUDED_LABELS = (3, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
+#INCLUDED_LABELS = (3, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
+INCLUDED_LABELS = (11, 15, 16, 18)
 INSPECTIONS = -1
 if len(argv) > 1:
     if argv[1] in ("-h", "-help"):
         print("Usage: python generate_data.py " +
               "[inspections] [type (modules|bomb|both)] [auto_label]")
         exit(0)
-    INSPECTIONS = int(argv[1])
-DATA_TYPE = argv[2] if len(argv) > 2 else "bomb"
-AUTO_LABEL = int(argv[3]) if len(argv) > 3 else False
+    DATA_TYPE = argv[1]
+INSPECTIONS = int(argv[2]) if len(argv) > 2 else -1
+AUTO_LABEL = int(argv[3]) if len(argv) > 3 else True
 config.MAX_GPU_FRACTION = 0.2
 MODEL = (None if not AUTO_LABEL else
          classifier.load_from_file("../resources/trained_models/module_model"))
@@ -87,7 +88,9 @@ def process_module_data(images, predictions=None):
     log(f"Captured {IMAGES_CAPTURED} module images.")
 
 inspect_str = "infinitely many" if INSPECTIONS == -1 else str(INSPECTIONS)
-log(f"Running {inspect_str} times.")
+suffix = "times" if INSPECTIONS != 1 else "time"
+log(f"Running {inspect_str} {suffix}.")
+log(f"Auto labeling {'enabled' if AUTO_LABEL else 'disabled'}.")
 
 log("Waiting for user to press S")
 main.sleep_until_start()
