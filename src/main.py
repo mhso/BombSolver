@@ -235,6 +235,7 @@ def release_mouse_at(digit, duration, x, y):
         sleep(0.5)
 
 def solve_wires(image, mod_pos, side_features):
+    log("Solving Simple Wires...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     result, coords = wire_solver.solve(image, side_features)
     if result == -1:
@@ -246,6 +247,7 @@ def solve_wires(image, mod_pos, side_features):
     win_util.click(mod_x + wire_x, mod_y + wire_y)
 
 def solve_button(image, mod_pos, side_features, character_model, duration):
+    log("Solving Button...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     hold = button_solver.solve(image, side_features, character_model)
     log(f"Hold button: {hold}", config.LOG_DEBUG)
@@ -265,6 +267,7 @@ def solve_button(image, mod_pos, side_features, character_model, duration):
         release_mouse_at(release_time, duration, button_x, button_y)
 
 def solve_simon(image, mod_pos, side_features):
+    log("Solving Simon Says...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     num = 1
     while not simon_solver.is_solved(image):
@@ -279,6 +282,7 @@ def solve_simon(image, mod_pos, side_features):
         image = convert_to_cv2(SC)
 
 def solve_wire_sequence(image, mod_pos):
+    log("Solving Wire Sequence...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     button_x, button_y = 128 + mod_x, 248 + mod_y
     color_hist = [0, 0, 0]
@@ -294,6 +298,7 @@ def solve_wire_sequence(image, mod_pos):
         sleep(2)
 
 def solve_complicated_wires(image, mod_pos, side_features):
+    log("Solving Complicated Wires...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     wires_to_cut, coords = compl_wires_solver.solve(image, side_features)
     for i, cut in enumerate(wires_to_cut):
@@ -303,6 +308,7 @@ def solve_complicated_wires(image, mod_pos, side_features):
             sleep(0.5)
 
 def solve_morse(image, mod_pos):
+    log("Solving Morse Code...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     presses, frequency = morse_solver.solve(image, screenshot_module)
     log(f"Morse frequency: {frequency}.", config.LOG_DEBUG)
@@ -314,6 +320,7 @@ def solve_morse(image, mod_pos):
     win_util.click(button_x, button_y)
 
 def solve_symbols(image, mod_pos, char_model):
+    log("Solving Symbols...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     coords = symbols_solver.solve(image, char_model)
     for y, x in coords:
@@ -321,7 +328,27 @@ def solve_symbols(image, mod_pos, char_model):
         sleep(0.5)
 
 def solve_maze(image, mod_pos):
-    return 0
+    log("Solving Maze...", config.LOG_DEBUG)
+    mod_x, mod_y = mod_pos
+    up_x, up_y = (mod_x + 143, mod_y + 36)
+    down_x, down_y = (mod_x + 143, mod_y + 263)
+    left_x, left_y = (mod_x + 27, mod_y + 144)
+    right_x, right_y = (mod_x + 253, mod_y + 144)
+    N = maze_solver.DIRECTIONS.North
+    S = maze_solver.DIRECTIONS.South
+    E = maze_solver.DIRECTIONS.East
+    W = maze_solver.DIRECTIONS.West
+    path = maze_solver.solve(image)
+    for direction in path:
+        if direction == N:
+            win_util.click(up_x, up_y)
+        elif direction == S:
+            win_util.click(down_x, down_y)
+        elif direction == W:
+            win_util.click(left_x, left_y)
+        elif direction == E:
+            win_util.click(right_x, right_y)
+        sleep(1)
 
 def solve_modules(modules, side_features, character_model, duration):
     dont_solve = [11]

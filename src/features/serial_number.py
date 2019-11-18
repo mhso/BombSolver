@@ -76,9 +76,11 @@ def get_masked_images(image, contours):
     for c in contours:
         ps = math.pow(cv2.arcLength(c, True), 2)
         circularity = 0
+        area = 0
         if ps > 0:
-            circularity = (4*math.pi*cv2.contourArea(c))/ps
-        if circularity > 0.08:
+            area = cv2.contourArea(c)
+            circularity = (4*math.pi*area)/ps
+        if circularity > 0.08 and area > 30:
             filtered_contours.append(c)
 
     masks = []

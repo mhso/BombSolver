@@ -66,13 +66,14 @@ def get_characters():
     return filtered_masks
 
 def format_time(prediction):
+    result = [5, 0, 0]
     if prediction[0] == "b":
-        prediction[0] = 8
-    if prediction[1] == "z" or prediction[1] == "b" or prediction[1] == "d":
-        prediction[1] = 0
-    if prediction[2] == "z" or prediction[2] == "b" or prediction[2] == "d":
-        prediction[2] = 0
-    return (int(prediction[0]), int(str(prediction[1]) + str(prediction[2])))
+        result[0] = 8
+    if prediction[1] == "3":
+        result[1] = 3
+    if prediction[2] == "5":
+        result[2] = 5
+    return (int(result[0]), int(str(result[1]) + str(result[2])))
 
 def get_bomb_duration(model):
     masks = get_characters()

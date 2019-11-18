@@ -17,8 +17,6 @@ def get_nth_wire(wires, index, color=None):
     return last_wire
 
 def solve(img, features):
-    log("Solving Simple Wires...", config.LOG_DEBUG)
-
     h, w, c = img.shape
 
     # Coordinates of wire endpoints.

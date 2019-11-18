@@ -5,10 +5,6 @@ def get_threshold(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     inverted = 255 - gray
     thresh = cv2.threshold(inverted, 190, 255, cv2.THRESH_BINARY_INV)[1]
-    cv2.imshow("Test", thresh)
-    key = cv2.waitKey(0)
-    if key == ord('q'):
-        exit(0)
     return thresh
 
 def crop_img(img):
@@ -17,7 +13,7 @@ def crop_img(img):
 
 def get_contour_positions(img):
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    contours = features_util.unite_contours(contours, 10)
+    contours = features_util.unite_contours(contours, 3)
     bboxes = [features_util.largest_bounding_rect(c) for c in contours]
     assert len(bboxes) == 4
 

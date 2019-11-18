@@ -1,4 +1,5 @@
 from numpy import array
+import math
 import cv2
 
 def color_in_range(pixel, rgb, lo_rgb, hi_rgb):
@@ -19,18 +20,21 @@ def convert_to_cv2(img):
 def mid_bbox(bbox):
     return (bbox[0] + (bbox[2]/2), bbox[1] + (bbox[3]/2))
 
+def eucl_dist(p_1, p_2):
+    return math.sqrt((p_2[0] - p_1[0]) ** 2 + (p_2[1] - p_1[1]) ** 2)
+
 def unite_contours(contours, threshold):
     united_contours = []
     curr_contours = []
     for i, c in enumerate(contours):
-        x, y, w, h = cv2.boundingRect(c)
-        mid_y = y + (h/2)
-        next_y = -1
+        bbox = cv2.boundingRect(c)
+        mid = mid_bbox(bbox)
+        next_mid = None
         if i < len(contours) - 1:
-            x2, y2, w2, h2 = cv2.boundingRect(contours[i+1])
-            next_y = y2 + (h2/2)
+            bbox2 = cv2.boundingRect(contours[i+1])
+            next_mid = mid_bbox(bbox2)
         curr_contours.append(c)
-        if next_y == -1 or abs(mid_y - next_y) > threshold:
+        if next_mid is None or eucl_dist(mid, next_mid) > threshold:
             united_contours.append(curr_contours)
             curr_contours = []
     return united_contours
