@@ -84,7 +84,7 @@ def get_masked_images(image, contours):
             filtered_contours.append(c)
 
     masks = []
-    united_contours = features_util.unite_contours(filtered_contours, 20)
+    united_contours = features_util.combine_contours(filtered_contours, 20)
 
     for c in united_contours:
         sub_mask = mask.copy()

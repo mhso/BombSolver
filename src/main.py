@@ -323,6 +323,9 @@ def solve_symbols(image, mod_pos, char_model):
     log("Solving Symbols...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     coords = symbols_solver.solve(image, char_model)
+    if coords is None:
+        log("WARNING: Could not solve symbols.", config.LOG_WARNING)
+        return
     for y, x in coords:
         win_util.click(mod_x + x, mod_y + y)
         sleep(0.5)
@@ -350,6 +353,15 @@ def solve_maze(image, mod_pos):
             win_util.click(right_x, right_y)
         sleep(0.5)
 
+def solve_password(image, mod_pos):
+    mod_x, mod_y = mod_pos
+    submit_x, submit_y = mod_x + 154, mod_y + 254
+    success = password_solver.solve(image, screenshot_module, win_util.click)
+    if success:
+        win_util.click(submit_x, submit_y)
+    else:
+        log(f"WARNING: Could not solve password.", config.LOG_WARNING)
+
 def solve_modules(modules, side_features, character_model, duration):
     dont_solve = [11]
     for module, label in enumerate(modules[:12]):
@@ -374,6 +386,8 @@ def solve_modules(modules, side_features, character_model, duration):
                 solve_complicated_wires(cv2_img, mod_pos, side_features)
             elif label == 17 and label not in dont_solve: # Maze.
                 solve_maze(cv2_img, mod_pos)
+            elif label == 18 and label not in dont_solve: # Password.
+                solve_password(cv2_img, mod_pos)
             elif label == 19 and label not in dont_solve: # Morse.
                 solve_morse(cv2_img, mod_pos)
             sleep(0.5)

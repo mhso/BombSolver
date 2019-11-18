@@ -23,7 +23,7 @@ def mid_bbox(bbox):
 def eucl_dist(p_1, p_2):
     return math.sqrt((p_2[0] - p_1[0]) ** 2 + (p_2[1] - p_1[1]) ** 2)
 
-def unite_contours(contours, threshold):
+def combine_contours(contours, threshold):
     united_contours = []
     curr_contours = []
     for i, c in enumerate(contours):

@@ -40,7 +40,7 @@ LABELS = [
 # Layer constants.
 CONV_FILTERS = 32
 KERNEL_SIZE = 3
-REGULARIZER_CONST = 0.001
+REGULARIZER_CONST = 0.0001
 
 # Optimizer constants.
 LEARNING_RATE = 0.02
@@ -48,10 +48,10 @@ MOMENTUM = 0.9
 WEIGHT_DECAY = 1e-4
 
 # Training constants.
-BATCH_SIZE = 256
-EPOCHS_PER_BATCH = 10
+BATCH_SIZE = 128
+EPOCHS_PER_BATCH = 5
 VALIDATION_SPLIT = 0.3
-TESTS_PER_LABEL = 1
+TESTS_PER_LABEL = 2
 
 def build_model():
     sess = utils.get_nn_config()

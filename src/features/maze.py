@@ -13,7 +13,7 @@ def crop_img(img):
 
 def get_contour_positions(img):
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    contours = features_util.unite_contours(contours, 3)
+    contours = features_util.combine_contours(contours, 3)
     bboxes = [features_util.largest_bounding_rect(c) for c in contours]
     assert len(bboxes) == 4
 
@@ -24,9 +24,4 @@ def get_contour_positions(img):
 def get_maze_details(img):
     cropped = crop_img(img)
     thresh = get_threshold(cropped)
-    # cv2.namedWindow("Test")
-    # cv2.imshow("Test", thresh)
-    # key = cv2.waitKey(0)
-    # if key == ord('q'):
-    #     exit(0)
     return get_contour_positions(thresh)

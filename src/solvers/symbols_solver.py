@@ -16,5 +16,8 @@ def solve(image, model):
         if set(symbols).issubset(COLUMNS[i]):
             column = i
             break
-    zipped = sorted(zip(symbols, coords), key=lambda a: COLUMNS[column].index(a[0]))
-    return [c for (s, c) in zipped]
+    try:
+        zipped = sorted(zip(symbols, coords), key=lambda a: COLUMNS[column].index(a[0]))
+        return [c for (s, c) in zipped]
+    except ValueError:
+        return None
