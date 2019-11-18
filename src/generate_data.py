@@ -15,7 +15,7 @@ import model.dataset_util as dataset_util
 import config
 
 #INCLUDED_LABELS = (3, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
-INCLUDED_LABELS = (11, 15, 16, 18)
+INCLUDED_LABELS = (3, 6, 10, 11, 15, 16, 17, 18)
 INSPECTIONS = -1
 if len(argv) > 1:
     if argv[1] in ("-h", "-help"):

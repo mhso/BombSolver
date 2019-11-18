@@ -24,4 +24,9 @@ def get_contour_positions(img):
 def get_maze_details(img):
     cropped = crop_img(img)
     thresh = get_threshold(cropped)
+    # cv2.namedWindow("Test")
+    # cv2.imshow("Test", thresh)
+    # key = cv2.waitKey(0)
+    # if key == ord('q'):
+    #     exit(0)
     return get_contour_positions(thresh)

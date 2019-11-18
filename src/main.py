@@ -348,7 +348,7 @@ def solve_maze(image, mod_pos):
             win_util.click(left_x, left_y)
         elif direction == E:
             win_util.click(right_x, right_y)
-        sleep(1)
+        sleep(0.5)
 
 def solve_modules(modules, side_features, character_model, duration):
     dont_solve = [11]
