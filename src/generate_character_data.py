@@ -25,24 +25,26 @@ DEL_IMAGES = True
 if len(argv) > 2:
     DEL_IMAGES = int(argv[2]) == 1
 
-INPUT_PATH = "../resources/training_images/" + DATA_TYPE
-OUTPUT_PATH = f"{INPUT_PATH}/generated_data/"
+TYPES = FEATURE_EXTRACTORS.keys() if DATA_TYPE == "all" else [DATA_TYPE]
+for data_type in TYPES:
+    INPUT_PATH = "../resources/training_images/" + data_type
+    OUTPUT_PATH = f"{INPUT_PATH}/generated_data/"
 
-NUM_IMAGES = len(glob(OUTPUT_PATH + "*.png"))
-INDEX = NUM_IMAGES
+    NUM_IMAGES = len(glob(OUTPUT_PATH + "*.png"))
+    INDEX = NUM_IMAGES
 
-FILES = glob(INPUT_PATH + "/*.png")
-for file in FILES:
-    img = cv2.imread(file, cv2.IMREAD_COLOR)
-    data = FEATURE_EXTRACTORS[DATA_TYPE].get_characters(img)
-    masks = data[0] if type(data) is tuple else data
-    for mask in masks:
-        if mask is None:
-            print("MASK IS NONE :(")
-            exit(0)
-        cv2.imwrite(f"{OUTPUT_PATH}{INDEX:03d}.png", mask)
-        INDEX += 1
-    if DEL_IMAGES:
-        unlink(file)
+    FILES = glob(INPUT_PATH + "/*.png")
+    for file in FILES:
+        img = cv2.imread(file, cv2.IMREAD_COLOR)
+        data = FEATURE_EXTRACTORS[data_type].get_characters(img)
+        masks = data[0] if type(data) is tuple else data
+        for mask in masks:
+            if mask is None:
+                print("MASK IS NONE :(")
+                exit(0)
+            cv2.imwrite(f"{OUTPUT_PATH}{INDEX:03d}.png", mask)
+            INDEX += 1
+        if DEL_IMAGES:
+            unlink(file)
 
-log(f"Captured {INDEX-NUM_IMAGES} images. Total images: {INDEX}")
+    log(f"Captured {INDEX-NUM_IMAGES} images. Total images: {INDEX}")

@@ -117,12 +117,15 @@ def sort_circles(c_1, c_2):
     return l[0] + l[1]
 
 def solve_maze(maze, start, end):
+    """
+    Performs BFS search of the maze from 'start' to 'end'.
+    """
     queue = [start]
     marked = [False] * 36
     marked[vertex(start)] = True
     edge_to = [None] * 36
     while queue != []:
-        c_v = queue.pop()
+        c_v = queue.pop(0)
         if c_v == end:
             break
         c_x, c_y = c_v

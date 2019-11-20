@@ -1,6 +1,8 @@
 from time import time, sleep
 from numpy import array
 import cv2
+from debug import log
+from config import LOG_DEBUG
 
 LETTERS = {
     ".-"    : "a",
@@ -87,11 +89,11 @@ def solve(img, screenshot_func):
 
                     if duration >= word_pause:
                         letters += LETTERS[symbols]
-                        print("=== END OF WORD ===")
+                        log("=== END OF WORD ===", LOG_DEBUG)
                         break
                     if duration >= letter_pause:
-                        print("--- END OF LETTER ---")
-                        print(f"LETTER: {LETTERS[symbols]}")
+                        log("--- END OF LETTER ---", LOG_DEBUG)
+                        log(f"LETTER: {LETTERS[symbols]}", LOG_DEBUG)
                         letters += LETTERS[symbols]
                         symbols = ""
                 else:
@@ -99,13 +101,11 @@ def solve(img, screenshot_func):
                     checkpoint = time() # Record time of light being unlit.
 
                     if duration >= dash_pause:
-                        print("DASH")
                         symbols += "-"
                     elif duration >= dot_pause:
-                        print("DOT")
                         symbols += "."
 
-    print(f"Word: {letters}")
+    log(f"Word: {letters}", LOG_DEBUG)
     # Return amount of times to press morse button.
     presses = WORDS.index(letters)
     return presses, FREQUENCIES[presses]

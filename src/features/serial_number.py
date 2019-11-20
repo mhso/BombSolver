@@ -7,7 +7,7 @@ import model.character_classifier as classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import features.util as features_util
-from debug import log
+from debug import log, LOG_DEBUG, LOG_WARNING
 
 def serial_bounding_box(img):
     a = np.where(img != 0)
@@ -47,10 +47,10 @@ def determine_alignment(img, bbox):
     min_y, max_y, min_x, max_x = bbox
     offset_x = img.shape[1] // 12
     if scan_for_red(img, min_x - offset_x):
-        log("Serial number is left aligned.", config.LOG_DEBUG)
+        log("Serial number is left aligned.", config.LOG_DEBUG, "Serial Number")
         return 1 # Left alignment.
     elif scan_for_red(img, max_x + offset_x):
-        log("Serial number is right aligned.", config.LOG_DEBUG)
+        log("Serial number is right aligned.", config.LOG_DEBUG, "Serial Number")
         return -1
     return 0
 
@@ -69,8 +69,8 @@ def get_segmented_image(img):
 
     return copy, contours, alignment
 
-def get_masked_images(image, contours):
-    mask = np.zeros(image.shape[:2])
+def get_masked_images(img, contours):
+    mask = np.zeros(img.shape[:2], dtype="uint8")
 
     filtered_contours = []
     for c in contours:
@@ -124,7 +124,7 @@ def create_serial_string(predictions, alignment):
 def get_serial_number(img, model):
     masks, alignment = get_characters(img)
     if not alignment:
-        print("ERROR: Could not determine alignment of serial number")
+        log("ERROR: Could not determine alignment of serial number", LOG_WARNING, "Serial Number")
         return None
     masks = np.array([dataset_util.reshape(mask, config.CHAR_INPUT_DIM[1:]) for mask in masks])
     prediction = classifier.predict(model, masks)

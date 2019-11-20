@@ -3,7 +3,8 @@ from sys import argv
 from math import floor
 from debug import log
 import windows_util as win_util
-from model import (module_classifier, character_classifier, classifier_util, dataset_util)
+from model import (module_classifier, character_classifier, symbol_classifier,
+                   classifier_util, dataset_util)
 from model.grab_img import screenshot
 from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
                      wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
@@ -287,7 +288,6 @@ def solve_wire_sequence(image, mod_pos):
     button_x, button_y = 128 + mod_x, 248 + mod_y
     color_hist = [0, 0, 0]
     for _ in range(4):
-        print(f"Wires seen: {color_hist}")
         wires_to_cut, color_hist, coords = wire_seq_solver.solve(image, color_hist)
         for i, cut in enumerate(wires_to_cut):
             if cut:
@@ -296,6 +296,7 @@ def solve_wire_sequence(image, mod_pos):
                 sleep(0.5)
         win_util.click(button_x, button_y)
         sleep(2)
+        image = convert_to_cv2(screenshot_module()[0])
 
 def solve_complicated_wires(image, mod_pos, side_features):
     log("Solving Complicated Wires...", config.LOG_DEBUG)
@@ -319,10 +320,10 @@ def solve_morse(image, mod_pos):
         sleep(0.3)
     win_util.click(button_x, button_y)
 
-def solve_symbols(image, mod_pos, char_model):
+def solve_symbols(image, mod_pos, symbol_model):
     log("Solving Symbols...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
-    coords = symbols_solver.solve(image, char_model)
+    coords = symbols_solver.solve(image, symbol_model)
     if coords is None:
         log("WARNING: Could not solve symbols.", config.LOG_WARNING)
         return
@@ -353,17 +354,20 @@ def solve_maze(image, mod_pos):
             win_util.click(right_x, right_y)
         sleep(0.5)
 
-def solve_password(image, mod_pos):
+def solve_password(image, char_model, mod_pos):
     mod_x, mod_y = mod_pos
     submit_x, submit_y = mod_x + 154, mod_y + 254
-    success = password_solver.solve(image, screenshot_module, win_util.click)
+    # Use lambda function to translate 'image-local' clicks
+    # from the password solver into 'screen-local' coordinates.
+    click_func = lambda x, y: win_util.click(mod_x + x, mod_y + y)
+    success = password_solver.solve(image, char_model, screenshot_module, click_func)
     if success:
         win_util.click(submit_x, submit_y)
     else:
         log(f"WARNING: Could not solve password.", config.LOG_WARNING)
 
-def solve_modules(modules, side_features, character_model, duration):
-    dont_solve = [11]
+def solve_modules(modules, side_features, character_model, symbol_model, duration):
+    dont_solve = []
     for module, label in enumerate(modules[:12]):
         mod_index = module if module < 6 else module - 6
         if label > 8:
@@ -377,7 +381,7 @@ def solve_modules(modules, side_features, character_model, duration):
             elif label == 10 and label not in dont_solve: # Button.
                 solve_button(cv2_img, mod_pos, side_features, character_model, duration)
             elif label == 11 and label not in dont_solve: # Symbols.
-                solve_symbols(cv2_img, mod_pos, character_model)
+                solve_symbols(cv2_img, mod_pos, symbol_model)
             elif label == 12 and label not in dont_solve: # Simon Says.
                 solve_simon(cv2_img, mod_pos, side_features)
             elif label == 13 and label not in dont_solve: # Wire Sequence.
@@ -387,7 +391,7 @@ def solve_modules(modules, side_features, character_model, duration):
             elif label == 17 and label not in dont_solve: # Maze.
                 solve_maze(cv2_img, mod_pos)
             elif label == 18 and label not in dont_solve: # Password.
-                solve_password(cv2_img, mod_pos)
+                solve_password(cv2_img, character_model, mod_pos)
             elif label == 19 and label not in dont_solve: # Morse.
                 solve_morse(cv2_img, mod_pos)
             sleep(0.5)
@@ -406,7 +410,10 @@ if __name__ == "__main__":
     MODEL = module_classifier.load_from_file("../resources/trained_models/module_model")
 
     # Load model for classifying letters (serial number, indicators, etc.).
-    SERIAL_MODEL = character_classifier.load_from_file("../resources/trained_models/character_model")
+    CHAR_MODEL = character_classifier.load_from_file("../resources/trained_models/character_model")
+
+    # Load model for classifying symbols (used only in the symbol module).
+    SYMBOL_MODEL = symbol_classifier.load_from_file("../resources/trained_models/symbol_model")
 
     log("Waiting for level selection...")
     log("Press S when a level has been selected.")
@@ -417,7 +424,7 @@ if __name__ == "__main__":
 
     if "skip" not in argv:
         # Extract bomb duration from description of bomb in main menu.
-        MINUTES, SECONDS = get_bomb_duration(SERIAL_MODEL)
+        MINUTES, SECONDS = get_bomb_duration(CHAR_MODEL)
         log(f"Bomb duration: {MINUTES} minute(s) & {SECONDS} seconds.")
 
         start_level()
@@ -435,7 +442,7 @@ if __name__ == "__main__":
     PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
 
     # Extract aforementioned features (read serial number, count num. of batteries, etc.).
-    SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], SERIAL_MODEL)
+    SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], CHAR_MODEL)
 
     log(f"Side features: {SIDE_FEATURES}", verbose=config.LOG_DEBUG)
     log(f"Modules: {[module_classifier.LABELS[x] for x in PREDICTIONS[:12]]}", config.LOG_DEBUG)
@@ -443,4 +450,7 @@ if __name__ == "__main__":
     LIGHT_MONITOR = LightMonitor() # Monitor whether the light in the room has turned off.
 
     # Solve all modules. Back of the bomb first, then from the top, left to right.
-    solve_modules(PREDICTIONS[:12], SIDE_FEATURES, SERIAL_MODEL, (TIME_STARTED, MINUTES, SECONDS))
+    solve_modules(PREDICTIONS[:12], SIDE_FEATURES, CHAR_MODEL,
+                  SYMBOL_MODEL, (TIME_STARTED, MINUTES, SECONDS))
+
+    LIGHT_MONITOR.shut_down()

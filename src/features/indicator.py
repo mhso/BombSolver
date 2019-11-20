@@ -50,7 +50,7 @@ def get_segmented_image(image):
     return thresh, contours, bbox
 
 def get_masked_images(image, contours):
-    mask = np.zeros(image.shape[:2])
+    mask = np.zeros(image.shape[:2], dtype="uint8")
 
     contours.sort(key=lambda c: cv2.boundingRect(c)[1])
 

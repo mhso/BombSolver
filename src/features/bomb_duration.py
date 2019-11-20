@@ -40,7 +40,7 @@ def get_characters():
     thresh = get_threshold(img)
     _, contours, _ = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
     contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c)))
-    mask = np.zeros(thresh.shape[:2])
+    mask = np.zeros(thresh.shape[:2], dtype="uint8")
     masks = []
     curr_contours = []
     sub_mask = mask.copy()

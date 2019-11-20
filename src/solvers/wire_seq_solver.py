@@ -1,7 +1,6 @@
 from enum import Enum
 import features.util as features_util
-import config
-from debug import log
+from debug import log, LOG_DEBUG
 
 WIRE_TABLE = [
     [
@@ -30,13 +29,13 @@ def get_wire_colors(img):
     rgb = features_util.split_channels(img)
     wires = [-1] * 3
     destinations = [-1] * 3
-    coords_to_cut = []
+    coords_to_cut = [-1] * 3
     for i, pixel in enumerate(coords):
         for color, (lo, hi) in enumerate(colors):
             if features_util.color_in_range(pixel, rgb, lo, hi):
                 letters = ["A", "B", "C"]
                 log(f"{Colors(color)} wire from {i//3+1} to {letters[i%3]}")
-                coords_to_cut.append(coords[i])
+                coords_to_cut[i // 3] = coords[i]
                 wires[i // 3] = color
                 destinations[i // 3] = i % 3
     return wires, destinations, coords_to_cut
@@ -54,4 +53,12 @@ def determine_cuts(wires, destinations, color_hist):
 
 def solve(img, wires_seen):
     wires, destinations, coords = get_wire_colors(img)
-    return determine_cuts(wires, destinations, wires_seen) + (coords,)
+    assert len(wires) == 3
+    assert len(destinations) == 3
+    assert len(coords) == 3
+    log(f"Wires: {wires}", LOG_DEBUG, module="Wire Sequence")
+    log(f"Destinations: {destinations}", LOG_DEBUG, module="Wire Sequence")
+    log(f"Coords: {coords}", LOG_DEBUG, module="Wire Sequence")
+    cuts, color_hist = determine_cuts(wires, destinations, wires_seen)
+    log(f"Wire hist: {wires_seen}", LOG_DEBUG, module="Wire Sequence")
+    return (cuts, color_hist, coords)

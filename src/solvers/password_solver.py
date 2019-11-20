@@ -26,20 +26,29 @@ def get_next_char(index, click_func):
     click_func(x, y)
     sleep(0.3)
 
-def solve(img, sc_func, click_func):
+def get_attempts(prefix, attemped_words):
+    return attemped_words.get(prefix, 0)
+
+def solve(img, model, sc_func, click_func):
     index = 1
-    attemped_words = set()
-    while True: # DFS-ish traversal of possible passwords.
-        characters = password_features.get_characters(img)
+    attemped_words = {}
+    while True: # DSF-ish traversal of possible passwords.
+        characters = password_features.get_password(img, model)
         match = word_matching_prefix(characters[:index])
-        if match is not None and match not in attemped_words:
+        attempts = get_attempts(match[:-1], attemped_words)
+        if match is not None and attempts < 5:
             if index == 5:
                 return True # Match found.
-            attemped_words.add(match)
+            if attempts == 0:
+                attemped_words[match[-1]] = 1
+            else:
+                attemped_words[match[-1]] += 1
             index += 1
         else:
             index -= 1
-        get_next_char(index, click_func)
+        if index == 0: # No passwords were found.
+            break
+        get_next_char(index-1, click_func)
         sc = sc_func()[0]
         img = features_util.convert_to_cv2(sc)
     return False

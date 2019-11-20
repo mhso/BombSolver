@@ -50,7 +50,7 @@ def get_segmented_image(image, color):
     return thresh, contours
 
 def get_masked_images(image, contours):
-    mask = np.zeros(image.shape[:2])
+    mask = np.zeros(image.shape[:2], dtype="uint8")
 
     filtered_contours = []
     for c in contours:

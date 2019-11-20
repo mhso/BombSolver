@@ -14,6 +14,7 @@ class LightMonitor:
     def __init__(self):
         self.pixel = (160, 10)
         self.change_event = Event()
+        self.is_active = True
         Thread(target=self.monitor).start()
 
     def monitor(self):
@@ -22,7 +23,7 @@ class LightMonitor:
         hi = (255, 255, 255)
         lights_on = True
         self.change_event.set()
-        while True:
+        while self.is_active:
             sc = screenshot(0, SH-200, 200, 200)
             img = features_util.convert_to_cv2(sc)
             rgb = features_util.split_channels(img)
@@ -42,3 +43,6 @@ class LightMonitor:
 
     def wait_for_light(self):
         self.change_event.wait()
+
+    def shut_down(self):
+        self.is_active = False

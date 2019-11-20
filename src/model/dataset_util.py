@@ -22,9 +22,9 @@ def pad_image(img):
     return new_img
 
 def reshape(cv2_img, size):
-    img = cv2_img
-    if len(cv2_img.shape) == 2:
-        img = img.reshape(img.shape + (1,))
+    img = cv2_img.copy()
+    if len(img.shape) == 2:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
     h, w, c = img.shape
     assert c in (3, 1)
     if h != w:
@@ -32,8 +32,6 @@ def reshape(cv2_img, size):
     if (h, w) != size:
         img = resize_img(img, size)
     img = img.reshape(((c,) + size))
-    if c == 1:
-        img = np.repeat(img, 3, axis=0)
     img = img.astype("float32")
     if np.any(img > 1):
         img = img / 255
@@ -53,9 +51,14 @@ def extract_test_data(images, labels, output_dim, cases_per_label):
             i += 1
             label = np.where(labels[i] == 1)[0]
         curr_label += 1
-        test_labels.extend(labels[i:i+cases_per_label])
-        test_images.extend(images[i:i+cases_per_label])
-        indexes.extend([i+x for x in range(cases_per_label)])
+        end_of_label = i
+        while label == curr_label-1 and end_of_label < labels.shape[0]:
+            label = np.where(labels[end_of_label] == 1)[0]
+            end_of_label += 1
+        rand_indices = np.random.choice([x for x in range(i, end_of_label)], size=cases_per_label)
+        test_labels.extend(labels[r_i] for r_i in rand_indices)
+        test_images.extend(images[r_i] for r_i in rand_indices)
+        indexes.extend([r_i for r_i in rand_indices])
     for index in reversed(indexes):
         train_images.pop(index)
         train_labels.pop(index)

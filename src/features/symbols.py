@@ -5,6 +5,7 @@ from model import (dataset_util,
 import features.util as features_util
 import cv2
 import config
+from debug import log, LOG_DEBUG
 
 def get_threshold(image):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -63,5 +64,5 @@ def get_symbols(img, model):
     masks = np.array([dataset_util.reshape(mask, config.SYMBOLS_INPUT_DIM[1:]) for mask in masks])
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
-    print(f"Symbols: {[classifier.LABELS[x] for x in best_pred]}")
+    log(f"Symbols: {[classifier.LABELS[x] for x in best_pred]}", LOG_DEBUG, "Symbols")
     return best_pred, coords

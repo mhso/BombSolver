@@ -1,5 +1,9 @@
+from numpy import array
 import cv2
 import features.util as features_util
+import config
+from debug import log, LOG_DEBUG
+from model import (classifier_util, dataset_util, character_classifier as classifier)
 
 def get_threshold(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -46,3 +50,12 @@ def get_characters(img):
     cropped = crop_img(img)
     thresh = get_threshold(cropped)
     return segment_image(thresh)
+
+def get_password(img, model):
+    masks = get_characters(img)
+    masks = array([dataset_util.reshape(mask, config.CHAR_INPUT_DIM[1:]) for mask in masks])
+    prediction = classifier.predict(model, masks)
+    best_pred = classifier_util.get_best_prediction(prediction)
+    characters = [classifier.LABELS[x] for x in best_pred]
+    log(f"Characters: {characters}", LOG_DEBUG, "Password")
+    return "".join(characters)

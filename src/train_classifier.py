@@ -1,4 +1,5 @@
 from sys import argv
+import cv2
 import model.module_classifier as module_classifier
 import model.character_classifier as character_classifier
 import model.symbol_classifier as symbol_classifier
@@ -20,6 +21,18 @@ def train_network(model, classifier, path, train_x, train_y, test_x, test_y, ste
             save_string = " - Saving model to file..."
         print(f"Step {i+1}/{steps} - Real acc: {acc:.3f}% - "
               + f"Training acc: {model_acc:.3f}% - Model loss: {model_loss}{save_string}")
+
+def test_network(model, classifier, test_x, test_y):
+    for (image, label) in zip(test_x, test_y):
+        prediction = classifier.predict(model, image)
+        best_pred = classifier_util.get_best_prediction(prediction)[0]
+        label_num = classifier_util.get_best_prediction(label.reshape((1, -1)))[0]
+        print(f"Label: {classifier.LABELS[label_num]} - Prediction: {classifier.LABELS[best_pred]}")
+        cv2.imshow("Test", image.reshape(image.shape[1:] + (3,)))
+        key = cv2.waitKey(0)
+        if key == ord('q'):
+            return
+        cv2.destroyWindow("Test")
 
 MODEL_SPECIFIC_VALUES = {
     "modules" : (
@@ -46,6 +59,7 @@ if len(argv) == 1 or not MODEL_SPECIFIC_VALUES.get(argv[1], False):
 
 DATA_TYPE = argv[1]
 DATASET_PATH = f"../resources/labeled_images/{DATA_TYPE}/"
+MODEL_PATH = f"../resources/trained_models/{DATA_TYPE[:-1]}_model"
 
 CLASSIFIER, LABEL_NAMES, DATA_DIMS = MODEL_SPECIFIC_VALUES[DATA_TYPE]
 
@@ -56,12 +70,15 @@ X_TRAIN, Y_TRAIN, X_TEST, Y_TEST = dataset_util.load_dataset(
 log(f"Training datapoints: {len(X_TRAIN)}.")
 log(f"Testing datapoints:  {len(X_TEST)}.")
 
-log("Building Neural Network model...")
-MODEL, _, _ = CLASSIFIER.build_model()
+if len(argv) > 2 and argv[2] == "test":
+    MODEL = CLASSIFIER.load_from_file(MODEL_PATH)
+    test_network(MODEL, CLASSIFIER, X_TEST, Y_TEST)
+else:
+    log("Building Neural Network model...")
+    MODEL, _, _ = CLASSIFIER.build_model()
 
-log("Training network...")
-FILE_PATH = f"../resources/trained_models/{DATA_TYPE[:-1]}_model"
-train_network(MODEL, CLASSIFIER, FILE_PATH, X_TRAIN, Y_TRAIN, X_TEST, Y_TEST)
+    log("Training network...")
+    train_network(MODEL, CLASSIFIER, MODEL_PATH, X_TRAIN, Y_TRAIN, X_TEST, Y_TEST)
 
-log("Saving model to file...")
-classifier_util.save_to_file(MODEL, FILE_PATH)
+    log("Saving model to file...")
+    classifier_util.save_to_file(MODEL, MODEL_PATH)
