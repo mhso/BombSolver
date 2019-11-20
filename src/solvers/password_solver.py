@@ -31,23 +31,24 @@ def get_attempts(prefix, attemped_words):
 
 def solve(img, model, sc_func, click_func):
     index = 1
-    attemped_words = {}
+    attempted_words = {}
     while True: # DSF-ish traversal of possible passwords.
         characters = password_features.get_password(img, model)
         match = word_matching_prefix(characters[:index])
-        attempts = get_attempts(match[:-1], attemped_words)
-        if match is not None and attempts < 5:
+        attemp_prefix = characters[:index-1]
+        attempts = get_attempts(attemp_prefix, attempted_words)
+        if match is not None:
             if index == 5:
                 return True # Match found.
-            if attempts == 0:
-                attemped_words[match[-1]] = 1
-            else:
-                attemped_words[match[-1]] += 1
             index += 1
-        else:
+        elif attempts > 4:
             index -= 1
         if index == 0: # No passwords were found.
             break
+        if attempts == 0:
+            attempted_words[attemp_prefix] = 1
+        else:
+            attempted_words[attemp_prefix] += 1
         get_next_char(index-1, click_func)
         sc = sc_func()[0]
         img = features_util.convert_to_cv2(sc)
