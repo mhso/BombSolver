@@ -34,7 +34,8 @@ def get_wire_colors(img):
         for color, (lo, hi) in enumerate(colors):
             if features_util.color_in_range(pixel, rgb, lo, hi):
                 letters = ["A", "B", "C"]
-                log(f"{Colors(color)} wire from {i//3+1} to {letters[i%3]}")
+                log(f"{Colors(color)} wire from {i//3+1} to {letters[i%3]}",
+                    LOG_DEBUG, "Wire Sequence")
                 coords_to_cut[i // 3] = coords[i]
                 wires[i // 3] = color
                 destinations[i // 3] = i % 3

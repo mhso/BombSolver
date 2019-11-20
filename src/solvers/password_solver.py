@@ -1,6 +1,7 @@
 from time import sleep
 import features.password as password_features
 import features.util as features_util
+from debug import log, LOG_DEBUG
 
 PASSWORDS = [
     "about", "after", "again", "below", "could",
@@ -32,12 +33,16 @@ def get_attempts(prefix, attemped_words):
 def solve(img, model, sc_func, click_func):
     index = 1
     attempted_words = {}
+    prev_search_word = "" # This is just for logging.
     while True: # DSF-ish traversal of possible passwords.
         characters = password_features.get_password(img, model)
         match = word_matching_prefix(characters[:index])
         attemp_prefix = characters[:index-1]
         attempts = get_attempts(attemp_prefix, attempted_words)
         if match is not None:
+            if match != prev_search_word:
+                log(f"Attempting to write '{match}'", LOG_DEBUG, "Password")
+            prev_search_word = match
             if index == 5:
                 return True # Match found.
             index += 1

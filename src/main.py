@@ -366,8 +366,20 @@ def solve_password(image, char_model, mod_pos):
     else:
         log(f"WARNING: Could not solve password.", config.LOG_WARNING)
 
+def solve_memory(image, char_model, mod_pos):
+    mod_x, mod_y = mod_pos
+    history = []
+    for i in range(5):
+        if i > 0:
+            sleep(3.5)
+        coords, label, position = memory_solver.solve(image, char_model, history)
+        history.append((label, position))
+        y, x = coords
+        win_util.click(x + mod_x, y + mod_y)
+        image = convert_to_cv2(screenshot_module()[0])
+
 def solve_modules(modules, side_features, character_model, symbol_model, duration):
-    dont_solve = []
+    dont_solve = [9, 10, 11, 12, 13, 14, 17, 18, 19]
     for module, label in enumerate(modules[:12]):
         mod_index = module if module < 6 else module - 6
         if label > 8:
@@ -388,6 +400,8 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                 solve_wire_sequence(cv2_img, mod_pos)
             elif label == 14 and label not in dont_solve: # Complicated Wires.
                 solve_complicated_wires(cv2_img, mod_pos, side_features)
+            elif label == 15 and label not in dont_solve: # Memory Game.
+                solve_memory(cv2_img, character_model, mod_pos)
             elif label == 17 and label not in dont_solve: # Maze.
                 solve_maze(cv2_img, mod_pos)
             elif label == 18 and label not in dont_solve: # Password.

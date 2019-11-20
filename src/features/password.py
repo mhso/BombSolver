@@ -2,7 +2,6 @@ from numpy import array
 import cv2
 import features.util as features_util
 import config
-from debug import log, LOG_DEBUG
 from model import (classifier_util, dataset_util, character_classifier as classifier)
 
 def get_threshold(img):
@@ -57,5 +56,4 @@ def get_password(img, model):
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
     characters = [classifier.LABELS[x] for x in best_pred]
-    log(f"Characters: {characters}", LOG_DEBUG, "Password")
     return "".join(characters)

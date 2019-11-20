@@ -9,15 +9,10 @@ import model.dataset_util as dataset_util
 import features.util as features_util
 from debug import log, LOG_DEBUG, LOG_WARNING
 
-def serial_bounding_box(img):
-    a = np.where(img != 0)
-    bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
-    return bbox
-
 def get_threshold(img):
     gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
     thresh1 = cv2.threshold(gray, 80, 255, cv2.THRESH_BINARY_INV)[1]
-    y_min, y_max, x_min, x_max = serial_bounding_box(thresh1)
+    y_min, y_max, x_min, x_max = features_util.crop_to_content(thresh1)
     gray = gray[y_min:y_max, x_min:x_max]
     inverted = 255 - gray
     thresh2 = cv2.threshold(inverted, 50, 255, cv2.THRESH_BINARY_INV)[1]
@@ -57,7 +52,7 @@ def determine_alignment(img, bbox):
 def get_segmented_image(img):
     cropped_img, thresh = get_threshold(img)
 
-    bbox = serial_bounding_box(thresh)
+    bbox = features_util.crop_to_content(thresh)
     alignment = determine_alignment(cropped_img, bbox)
 
     min_y, max_y, min_x, max_x = bbox
@@ -107,6 +102,7 @@ def rotate_masks(masks, alignment):
 def get_characters(img):
     image, contours, alignment = get_segmented_image(img)
     masks = get_masked_images(image, contours)
+    assert len(masks) == 6
     masks = rotate_masks(masks, alignment)
     return masks, alignment
 

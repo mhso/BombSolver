@@ -1,4 +1,4 @@
-from numpy import array
+import numpy as np
 import math
 import cv2
 
@@ -15,13 +15,18 @@ def split_channels(img_bgr):
     return (red, green, blue)
 
 def convert_to_cv2(img):
-    return cv2.cvtColor(array(img), cv2.COLOR_RGB2BGR)
+    return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
 def mid_bbox(bbox):
     return (bbox[0] + (bbox[2]/2), bbox[1] + (bbox[3]/2))
 
 def eucl_dist(p_1, p_2):
     return math.sqrt((p_2[0] - p_1[0]) ** 2 + (p_2[1] - p_1[1]) ** 2)
+
+def crop_to_content(img):
+    a = np.where(img != 0)
+    bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
+    return bbox
 
 def combine_contours(contours, threshold):
     united_contours = []

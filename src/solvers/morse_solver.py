@@ -89,12 +89,13 @@ def solve(img, screenshot_func):
 
                     if duration >= word_pause:
                         letters += LETTERS[symbols]
-                        log("=== END OF WORD ===", LOG_DEBUG)
+                        log("=== END OF WORD ===", LOG_DEBUG, "Morse")
                         break
                     if duration >= letter_pause:
-                        log("--- END OF LETTER ---", LOG_DEBUG)
-                        log(f"LETTER: {LETTERS[symbols]}", LOG_DEBUG)
-                        letters += LETTERS[symbols]
+                        log("--- END OF LETTER ---", LOG_DEBUG, "Morse")
+                        letter = LETTERS.get(symbols, '')
+                        log(f"LETTER: {letter}", LOG_DEBUG, "Morse")
+                        letters += letter
                         symbols = ""
                 else:
                     duration = time() - checkpoint # Record length of flash.
@@ -105,7 +106,7 @@ def solve(img, screenshot_func):
                     elif duration >= dot_pause:
                         symbols += "."
 
-    log(f"Word: {letters}", LOG_DEBUG)
+    log(f"Word: {letters}", LOG_DEBUG, "Morse")
     # Return amount of times to press morse button.
     presses = WORDS.index(letters)
     return presses, FREQUENCIES[presses]
