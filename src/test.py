@@ -1,14 +1,13 @@
 from glob import glob
 import cv2
-import features.memory as mem_feat
+import features.whos_first as whos_first_feat
 
-FILES = glob("../resources/training_images/memory_game/*.png")
-for file in FILES:
-    img = cv2.imread(file, cv2.IMREAD_COLOR)
-    masks, coords = mem_feat.get_characters(img)
-    for mask in masks:
-        cv2.imshow("Test", mask)
-        key = cv2.waitKey(0)
-        if key == ord('q'):
-            exit(0)
-        cv2.destroyWindow("Test")
+FILE = "../resources/misc/3.png"
+img = cv2.imread(FILE, cv2.IMREAD_COLOR)
+masks, _, _ = whos_first_feat.get_characters(img)
+for mask in masks:
+    cv2.imshow("Test", mask)
+    key = cv2.waitKey(0)
+    if key == ord('q'):
+        exit(0)
+    cv2.destroyWindow("Test")

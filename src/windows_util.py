@@ -36,4 +36,4 @@ def click(x, y, btn="left"):
     mouse_up(x, y, btn)
 
 def get_screen_size():
-    return (win.GetSystemMetrics(0), win.GetSystemMetrics(1))
+    return (1920, 1080)#(win.GetSystemMetrics(0), win.GetSystemMetrics(1))
