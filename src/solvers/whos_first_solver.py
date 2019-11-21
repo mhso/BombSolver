@@ -158,8 +158,8 @@ def solve(img, model):
     words, coords = whos_features.get_words(img, model)
     word_on_screen = words[0]
     words = words[1:]
-    log(f"Word on screen: {word_on_screen}")
-    log(f"Words on labels: {words}")
+    log(f"Word on screen: {word_on_screen}", LOG_DEBUG, "Who's On First?")
+    log(f"Words on labels: {words}", LOG_DEBUG, "Who's On First?")
 
     step_1 = STEP_1_SOLUTION.get(word_on_screen, None)
     if step_1 is None:
@@ -167,7 +167,7 @@ def solve(img, model):
     step_2_words = STEP_2_SOLUTION.get(words[step_1], None)
     if step_2_words is None:
         return step_2_words
-    
+
     for word in step_2_words:
         if word in words:
             return coords[words.index(words)]

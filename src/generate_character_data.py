@@ -2,7 +2,7 @@ from sys import argv
 from os import unlink
 from glob import glob
 import cv2
-from features import (serial_number, indicator, button, symbols, password, memory)
+from features import (serial_number, indicator, button, symbols, password, memory, whos_first)
 from debug import log
 import config
 
@@ -14,7 +14,8 @@ FEATURE_EXTRACTORS = {
     "button" : button,
     "symbols" : symbols,
     "password" : password,
-    "memory_game" : memory
+    "memory_game" : memory,
+    "whos_on_first" : whos_first
 }
 
 if len(argv) == 1 or argv[1] in "-h, -help":

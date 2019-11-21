@@ -30,7 +30,7 @@ def split_labels(img):
     return images, coords
 
 def get_masked_images(img):
-    contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c))[0])
 
     contours = features_util.combine_contours(contours, 5)
@@ -38,7 +38,7 @@ def get_masked_images(img):
     for c in contours:
         mask = np.zeros(img.shape, "uint8")
         cv2.drawContours(mask, c, -1, (255, 255, 255), -1)
-        min_y, max_y, min_x, max_x = features_util.crop_to_content(mask)
+        min_y, max_y, min_x, max_x = features_util.crop_to_content(mask, padding=2)
         masks.append(mask[min_y:max_y, min_x:max_x])
 
     filtered_masks = []

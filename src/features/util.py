@@ -1,5 +1,5 @@
-import numpy as np
 import math
+import numpy as np
 import cv2
 
 def color_in_range(pixel, rgb, lo_rgb, hi_rgb):
@@ -23,12 +23,14 @@ def mid_bbox(bbox):
 def eucl_dist(p_1, p_2):
     return math.sqrt((p_2[0] - p_1[0]) ** 2 + (p_2[1] - p_1[1]) ** 2)
 
-def crop_to_content(img):
+def crop_to_content(img, padding=0):
     a = np.where(img != 0)
-    bbox = np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1])
-    return bbox
+    y_min, y_max, x_min, x_max = (np.min(a[0]), np.max(a[0]), np.min(a[1]), np.max(a[1]))
+    pad_left = padding if x_min - padding >= 0 and y_min - padding >= 0 else 0
+    pad_right = padding+1 if padding != 0 and x_max + padding < img.shape[1] and y_max + padding < img.shape[0] else 0
+    return (y_min-pad_left, y_max+pad_right, x_min-pad_left, x_max+pad_right)
 
-def combine_contours(contours, threshold):
+def combine_contours(contours, thresh_x, thresh_y=None):
     united_contours = []
     curr_contours = []
     for i, c in enumerate(contours):
@@ -39,7 +41,9 @@ def combine_contours(contours, threshold):
             bbox2 = cv2.boundingRect(contours[i+1])
             next_mid = mid_bbox(bbox2)
         curr_contours.append(c)
-        if next_mid is None or eucl_dist(mid, next_mid) > threshold:
+        x_dist, y_dist = abs(next_mid[0] - mid[0]), abs(next_mid[1] - mid[1])
+        split = eucl_dist(mid, next_mid) > thresh_x if thresh_y is None else x_dist > thresh_x and y_dist > thresh_y
+        if next_mid is None or split:
             united_contours.append(curr_contours)
             curr_contours = []
     return united_contours

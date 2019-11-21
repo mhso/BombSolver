@@ -46,7 +46,8 @@ if DATA_TYPE not in VALID_TYPES:
     exit(0)
 
 if DATA_TYPE == "characters":
-    FOLDERS = ("button", "indicator", "serial_number", "timer", "password", "memory_game")
+    FOLDERS = ("button", "indicator", "serial_number", "timer",
+               "password", "memory_game", "whos_on_first")
     FILES = []
     for folder in FOLDERS:
         FILES = FILES + glob(f"../resources/training_images/{folder}/generated_data/*.png")
