@@ -143,13 +143,13 @@ STEP_2_SOLUTION = {
         "hold", "uh huh", "your", "like"
     ],
     "sure" : [
-        "you are", "done", "like", "you're", "you",
-        "hold", "uh huh", "ur", "sure", "u",
-        "what?", "next", "your", "uh uh"
+        "youare", "done", "like", "youre", "you",
+        "hold", "uhhuh", "ur", "sure", "u",
+        "what?", "next", "your", "uhuh"
     ],
     "like" : [
-        "you're", "next", "u", "ur", "hold",
-        "done", "uh uh", "what?", "uh huh", "you",
+        "youre", "next", "u", "ur", "hold",
+        "done", "uhuh", "what?", "uhhuh", "you",
         "like", "sure", "you are", "your"
     ]
 }
@@ -164,8 +164,11 @@ def solve(img, model):
     step_1 = STEP_1_SOLUTION.get(word_on_screen, None)
     if step_1 is None:
         return step_1
-    step_2 = STEP_2_SOLUTION.get(words[step_1])
-    if step_2 is None:
-        return step_2
-
-    return coords[words.index(step_2)]
+    step_2_words = STEP_2_SOLUTION.get(words[step_1], None)
+    if step_2_words is None:
+        return step_2_words
+    
+    for word in step_2_words:
+        if word in words:
+            return coords[words.index(words)]
+    return None

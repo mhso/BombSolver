@@ -380,9 +380,15 @@ def solve_memory(image, char_model, mod_pos):
 
 def solve_whos_on_first(image, char_model, mod_pos):
     mod_x, mod_y = mod_pos
-    coords = whos_first_solver.solve(image, char_model)
-    if coords is None:
-        log(f"WARNING: Could not solve 'Who's On First?'.", config.LOG_WARNING)
+    for i in range(3):
+        if i > 0:
+            sleep(3.5)
+        coords = whos_first_solver.solve(image, char_model)
+        if coords is None:
+            log(f"WARNING: Could not solve 'Who's On First?'.", config.LOG_WARNING)
+        y, x = coords
+        win_util.click(x + mod_x, y + mod_y)
+        image = convert_to_cv2(screenshot_module()[0])
 
 def solve_modules(modules, side_features, character_model, symbol_model, duration):
     dont_solve = [9, 10, 11, 12, 13, 14, 17, 18, 19]
