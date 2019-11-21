@@ -78,5 +78,7 @@ def get_words(img, model):
             prediction = classifier.predict(model, masks)
             best_preds = [classifier.LABELS[x] for x in classifier_util.get_best_prediction(prediction)]
             result = "".join(best_preds)
+            if result[:4] == "what" and len(result) == 5:
+                result[4] = "?"
         predictions.append(result)
     return predictions, coords

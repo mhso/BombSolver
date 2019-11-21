@@ -7,7 +7,7 @@ import model.character_classifier as classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import features.util as features_util
-from debug import log, LOG_DEBUG, LOG_WARNING
+from debug import log, LOG_WARNING
 
 def get_threshold(img):
     gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
