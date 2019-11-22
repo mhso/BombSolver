@@ -16,19 +16,29 @@ from features.indicator import get_indicator_features
 from features.light_monitor import LightMonitor
 import config
 
+# Monitors whether the light has turned off from a seperate thread.
 LIGHT_MONITOR = None
 
 def sleep_until_start():
+    """
+    Sleep until 's' has been pressed.
+    """
     while True:
         if win_util.s_pressed():
             break
         sleep(0.1)
 
 def start_level():
+    """
+    Click the 'Start Level' button, after a level has been selected.
+    """
     SW, SH = win_util.get_screen_size()
     win_util.click(int(SW - SW/2.6), int(SH - SH/3.3))
 
 def await_level_start():
+    """
+    Sleep until the given level has started (i.e. timer on bomb has started).
+    """
     sleep(16.4)
 
 def inspect_side(mx, my, sx, sy, sw, sh):
@@ -236,7 +246,6 @@ def release_mouse_at(digit, duration, x, y):
         sleep(0.5)
 
 def solve_wires(image, mod_pos, side_features):
-    log("Solving Simple Wires...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     result, coords = wire_solver.solve(image, side_features)
     if result == -1:
@@ -248,7 +257,6 @@ def solve_wires(image, mod_pos, side_features):
     win_util.click(mod_x + wire_x, mod_y + wire_y)
 
 def solve_button(image, mod_pos, side_features, character_model, duration):
-    log("Solving Button...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     hold = button_solver.solve(image, side_features, character_model)
     log(f"Hold button: {hold}", config.LOG_DEBUG)
@@ -268,7 +276,6 @@ def solve_button(image, mod_pos, side_features, character_model, duration):
         release_mouse_at(release_time, duration, button_x, button_y)
 
 def solve_simon(image, mod_pos, side_features):
-    log("Solving Simon Says...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     num = 1
     while not simon_solver.is_solved(image):
@@ -283,7 +290,6 @@ def solve_simon(image, mod_pos, side_features):
         image = convert_to_cv2(SC)
 
 def solve_wire_sequence(image, mod_pos):
-    log("Solving Wire Sequence...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     button_x, button_y = 128 + mod_x, 248 + mod_y
     color_hist = [0, 0, 0]
@@ -299,7 +305,6 @@ def solve_wire_sequence(image, mod_pos):
         image = convert_to_cv2(screenshot_module()[0])
 
 def solve_complicated_wires(image, mod_pos, side_features):
-    log("Solving Complicated Wires...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     wires_to_cut, coords = compl_wires_solver.solve(image, side_features)
     for i, cut in enumerate(wires_to_cut):
@@ -309,7 +314,6 @@ def solve_complicated_wires(image, mod_pos, side_features):
             sleep(0.5)
 
 def solve_morse(image, mod_pos):
-    log("Solving Morse Code...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     presses, frequency = morse_solver.solve(image, screenshot_module)
     log(f"Morse frequency: {frequency}.", config.LOG_DEBUG)
@@ -321,7 +325,6 @@ def solve_morse(image, mod_pos):
     win_util.click(button_x, button_y)
 
 def solve_symbols(image, mod_pos, symbol_model):
-    log("Solving Symbols...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     coords = symbols_solver.solve(image, symbol_model)
     if coords is None:
@@ -332,7 +335,6 @@ def solve_symbols(image, mod_pos, symbol_model):
         sleep(0.5)
 
 def solve_maze(image, mod_pos):
-    log("Solving Maze...", config.LOG_DEBUG)
     mod_x, mod_y = mod_pos
     up_x, up_y = (mod_x + 143, mod_y + 36)
     down_x, down_y = (mod_x + 143, mod_y + 263)
@@ -382,8 +384,6 @@ def solve_whos_on_first(image, char_model, mod_pos):
     mod_x, mod_y = mod_pos
     for i in range(3):
         coords = whos_first_solver.solve(image, char_model)
-        if coords is None:
-            log(f"WARNING: Could not solve 'Who's On First?'.", config.LOG_WARNING)
         y, x = coords
         win_util.click(x + mod_x, y + mod_y)
         if i < 2:
@@ -400,28 +400,34 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             SC, x, y = screenshot_module()
             mod_pos = (x, y)
             cv2_img = convert_to_cv2(SC)
-            if label == 9 and label not in dont_solve: # Wires.
-                solve_wires(cv2_img, mod_pos, side_features)
-            elif label == 10 and label not in dont_solve: # Button.
-                solve_button(cv2_img, mod_pos, side_features, character_model, duration)
-            elif label == 11 and label not in dont_solve: # Symbols.
-                solve_symbols(cv2_img, mod_pos, symbol_model)
-            elif label == 12 and label not in dont_solve: # Simon Says.
-                solve_simon(cv2_img, mod_pos, side_features)
-            elif label == 13 and label not in dont_solve: # Wire Sequence.
-                solve_wire_sequence(cv2_img, mod_pos)
-            elif label == 14 and label not in dont_solve: # Complicated Wires.
-                solve_complicated_wires(cv2_img, mod_pos, side_features)
-            elif label == 15 and label not in dont_solve: # Memory Game.
-                solve_memory(cv2_img, character_model, mod_pos)
-            elif label == 16 and label not in dont_solve: # Who's on First?.
-                solve_whos_on_first(cv2_img, character_model, mod_pos)
-            elif label == 17 and label not in dont_solve: # Maze.
-                solve_maze(cv2_img, mod_pos)
-            elif label == 18 and label not in dont_solve: # Password.
-                solve_password(cv2_img, character_model, mod_pos)
-            elif label == 19 and label not in dont_solve: # Morse.
-                solve_morse(cv2_img, mod_pos)
+            mod_name = module_classifier.LABELS[label]
+            log(f"Solving {mod_name}...")
+            try:
+                if label == 9 and label not in dont_solve: # Wires.
+                    solve_wires(cv2_img, mod_pos, side_features)
+                elif label == 10 and label not in dont_solve: # Button.
+                    solve_button(cv2_img, mod_pos, side_features, character_model, duration)
+                elif label == 11 and label not in dont_solve: # Symbols.
+                    solve_symbols(cv2_img, mod_pos, symbol_model)
+                elif label == 12 and label not in dont_solve: # Simon Says.
+                    solve_simon(cv2_img, mod_pos, side_features)
+                elif label == 13 and label not in dont_solve: # Wire Sequence.
+                    solve_wire_sequence(cv2_img, mod_pos)
+                elif label == 14 and label not in dont_solve: # Complicated Wires.
+                    solve_complicated_wires(cv2_img, mod_pos, side_features)
+                elif label == 15 and label not in dont_solve: # Memory Game.
+                    solve_memory(cv2_img, character_model, mod_pos)
+                elif label == 16 and label not in dont_solve: # Who's on First?
+                    solve_whos_on_first(cv2_img, character_model, mod_pos)
+                elif label == 17 and label not in dont_solve: # Maze.
+                    solve_maze(cv2_img, mod_pos)
+                elif label == 18 and label not in dont_solve: # Password.
+                    solve_password(cv2_img, character_model, mod_pos)
+                elif label == 19 and label not in dont_solve: # Morse.
+                    solve_morse(cv2_img, mod_pos)
+            except Exception as e:
+                log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
+                log(str(e), config.LOG_DEBUG)
             sleep(0.5)
             deselect_module(mod_index)
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.

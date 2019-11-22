@@ -1,9 +1,8 @@
 import config
 
-def log(arg, verbose=0, module=None):
-    prefix = "BombSolver" if module is None else module
+def log(arg, verbose=0, module="BombSolver"):
     if config.VERBOSITY >= verbose:
-        print(f"[{prefix}] - {arg}")
+        print(f"[{module}] - {arg}")
 
 LOG_DEBUG = config.LOG_DEBUG
 LOG_WARNING = config.LOG_WARNING

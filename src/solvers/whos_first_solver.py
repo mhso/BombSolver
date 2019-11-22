@@ -161,13 +161,12 @@ def solve(img, model):
     log(f"Word on screen: {word_on_screen}", LOG_DEBUG, "Who's On First?")
     log(f"Words on labels: {words}", LOG_DEBUG, "Who's On First?")
 
-    step_1 = STEP_1_SOLUTION.get(word_on_screen, None)
-    if step_1 is None:
-        return step_1
-    step_2_words = STEP_2_SOLUTION.get(words[step_1], None)
-    if step_2_words is None:
-        return step_2_words
+    # Get the position of the keyword used in step two.
+    step_1 = STEP_1_SOLUTION.get(word_on_screen)
+    # Get the list of words associated with previously acquired keyword.
+    step_2_words = STEP_2_SOLUTION.get(words[step_1])
 
+    # Press the label with the first word that matches any in the list.
     for word in step_2_words:
         if word in words:
             return coords[words.index(word)]
