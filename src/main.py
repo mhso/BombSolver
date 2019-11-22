@@ -370,24 +370,24 @@ def solve_memory(image, char_model, mod_pos):
     mod_x, mod_y = mod_pos
     history = []
     for i in range(5):
-        if i > 0:
-            sleep(3.5)
         coords, label, position = memory_solver.solve(image, char_model, history)
         history.append((label, position))
         y, x = coords
         win_util.click(x + mod_x, y + mod_y)
+        if i < 4:
+            sleep(3.5)
         image = convert_to_cv2(screenshot_module()[0])
 
 def solve_whos_on_first(image, char_model, mod_pos):
     mod_x, mod_y = mod_pos
     for i in range(3):
-        if i > 0:
-            sleep(3.5)
         coords = whos_first_solver.solve(image, char_model)
         if coords is None:
             log(f"WARNING: Could not solve 'Who's On First?'.", config.LOG_WARNING)
         y, x = coords
         win_util.click(x + mod_x, y + mod_y)
+        if i < 2:
+            sleep(3.5)
         image = convert_to_cv2(screenshot_module()[0])
 
 def solve_modules(modules, side_features, character_model, symbol_model, duration):

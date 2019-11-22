@@ -37,7 +37,7 @@ def get_masked_images(img):
     # Filter out contours that have an area of less than 9 (apostrophes fx.).
     filtered_contours = []
     for c in contours:
-        if cv2.contourArea(c) > 9:
+        if cv2.contourArea(c) > 8:
             filtered_contours.append(c)
 
     # Combine contours that are '4' apart from each on the x-axis (or 30 on the y).
@@ -59,7 +59,7 @@ def get_masked_images(img):
             mask2 = mask[:, 12:]
             filtered_masks.append(mask1)
             filtered_masks.append(mask2)
-        elif mask.shape[0] > 14 or mask.shape[1] > 14:
+        elif mask.shape[0] > 12 or mask.shape[1] > 12:
             filtered_masks.append(mask)
 
     return filtered_masks
@@ -88,6 +88,10 @@ def get_word(prediction):
     characters = [classifier.LABELS[x] for x in classifier_util.get_best_prediction(prediction)]
     if characters[0] == "y" and characters[2] == "u":
         characters[1] = "o"
+    elif characters[:4] == ["w", "h", "a", "t"] and len(characters) == 5:
+        characters[4] = "?"
+    elif characters[:3] == ["d", "i", "s"] and characters[4:] == ["l", "a", "y"]:
+        characters[3] = "p"
     return "".join(characters)
 
 def get_words(img, model):
@@ -99,7 +103,5 @@ def get_words(img, model):
             masks = np.array([dataset_util.reshape(mask, config.CHAR_INPUT_DIM[1:]) for mask in masks])
             prediction = classifier.predict(model, masks)
             result = get_word(prediction)
-            if result[:4] == "what" and len(result) == 5:
-                result[4] = "?"
         predictions.append(result)
     return predictions, coords
