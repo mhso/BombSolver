@@ -83,64 +83,64 @@ STEP_2_SOLUTION = {
         "first", "what", "no", "wait"
     ],
     "you" : [
-        "sure", "you are", "your", "you're", "next",
-        "uh huh", "ur", "hold", "what?", "you",
-        "uh uh", "like", "done", "u"
+        "sure", "youare", "your", "youre", "next",
+        "uhhuh", "ur", "hold", "what?", "you",
+        "uhuh", "like", "done", "u"
     ],
     "youare" : [
-        "your", "next", "like", "uh huh", "what?",
-        "done", "uh uh", "hold", "you", "u",
-        "you're", "sure", "ur", "you are"
+        "your", "next", "like", "uhhuh", "what?",
+        "done", "uhuh", "hold", "you", "u",
+        "youre", "sure", "ur", "youare"
     ],
     "your" : [
-        "uh uh", "you are", "uh huh", "your", "next",
-        "ur", "sure", "u", "you're", "you",
+        "uhuh", "youare", "uhhuh", "your", "next",
+        "ur", "sure", "u", "youre", "you",
         "what?", "hold", "like", "done"
     ],
     "youre" : [
-        "you", "you're", "ur", "next", "uh uh",
-        "you are", "u", "your", "what?", "uh huh",
+        "you", "youre", "ur", "next", "uhuh",
+        "youare", "u", "your", "what?", "uhhuh",
         "sure", "done", "like", "hold"
     ],
     "ur" : [
-        "done", "u", "ur", "uh huh", "what?",
-        "sure", "your", "hold", "you're", "like",
-        "next", "uh uh", "you are", "you"
+        "done", "u", "ur", "uhhuh", "what?",
+        "sure", "your", "hold", "youre", "like",
+        "next", "uhuh", "youare", "you"
     ],
     "u" : [
-        "uh huh", "sure", "next", "what?", "you're",
-        "ur", "uh uh", "done", "u", "you",
-        "like", "hold", "you are", "your"
+        "uhhuh", "sure", "next", "what?", "youre",
+        "ur", "uhuh", "done", "u", "you",
+        "like", "hold", "youare", "your"
     ],
     "uhhuh" : [
-        "uh huh", "your", "you are", "you", "done",
-        "hold", "uh uh", "next", "sure", "like",
-        "you're", "ur", "u", "what?"
+        "uhhuh", "your", "youare", "you", "done",
+        "hold", "uhuh", "next", "sure", "like",
+        "youre", "ur", "u", "what?"
     ],
     "uhuh" : [
-        "ur", "u", "you are", "you're", "next",
-        "uh uh", "done", "you", "uh huh", "like",
+        "ur", "u", "youare", "youre", "next",
+        "uhuh", "done", "you", "uhhuh", "like",
         "your", "sure", "hold", "what?"
     ],
     "what?" : [
-        "you", "hold", "you're", "your", "u",
-        "done", "uh uh", "like", "you are", "uh huh",
+        "you", "hold", "youre", "your", "u",
+        "done", "uhuh", "like", "youare", "uhhuh",
         "ur", "next", "what?", "sure"
     ],
     "done" : [
-        "sure", "uh huh", "next", "what?", "your",
-        "ur", "you're", "hold", "like", "you",
-        "u", "you are", "uh uh", "done"
+        "sure", "uhhuh", "next", "what?", "your",
+        "ur", "youre", "hold", "like", "you",
+        "u", "youare", "uhuh", "done"
     ],
     "next" : [
-        "what?", "uh huh", "uh uh", "your", "hold",
-        "sure", "next", "like", "done", "you are",
-        "ur", "you're", "u", "you"
+        "what?", "uhhuh", "uhuh", "your", "hold",
+        "sure", "next", "like", "done", "youare",
+        "ur", "youre", "u", "you"
     ],
     "hold" : [
-        "you are", "u", "done", "uh uh", "you",
-        "ur", "sure", "what?", "you're", "next",
-        "hold", "uh huh", "your", "like"
+        "youare", "u", "done", "uhuh", "you",
+        "ur", "sure", "what?", "youre", "next",
+        "hold", "uhhuh", "your", "like"
     ],
     "sure" : [
         "youare", "done", "like", "youre", "you",
@@ -150,7 +150,7 @@ STEP_2_SOLUTION = {
     "like" : [
         "youre", "next", "u", "ur", "hold",
         "done", "uhuh", "what?", "uhhuh", "you",
-        "like", "sure", "you are", "your"
+        "like", "sure", "youare", "your"
     ]
 }
 
@@ -170,5 +170,5 @@ def solve(img, model):
 
     for word in step_2_words:
         if word in words:
-            return coords[words.index(words)]
+            return coords[words.index(word)]
     return None

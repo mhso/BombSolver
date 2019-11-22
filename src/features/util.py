@@ -41,9 +41,8 @@ def combine_contours(contours, thresh_x, thresh_y=None):
             bbox2 = cv2.boundingRect(contours[i+1])
             next_mid = mid_bbox(bbox2)
         curr_contours.append(c)
-        x_dist, y_dist = abs(next_mid[0] - mid[0]), abs(next_mid[1] - mid[1])
-        split = eucl_dist(mid, next_mid) > thresh_x if thresh_y is None else x_dist > thresh_x and y_dist > thresh_y
-        if next_mid is None or split:
+        if (next_mid is None or (eucl_dist(mid, next_mid) > thresh_x if thresh_y is None else
+                abs(next_mid[0] - mid[0]) > thresh_x or abs(next_mid[1] - mid[1]) > thresh_y)):
             united_contours.append(curr_contours)
             curr_contours = []
     return united_contours

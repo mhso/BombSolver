@@ -414,6 +414,8 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                 solve_complicated_wires(cv2_img, mod_pos, side_features)
             elif label == 15 and label not in dont_solve: # Memory Game.
                 solve_memory(cv2_img, character_model, mod_pos)
+            elif label == 16 and label not in dont_solve: # Who's on First?.
+                solve_whos_on_first(cv2_img, character_model, mod_pos)
             elif label == 17 and label not in dont_solve: # Maze.
                 solve_maze(cv2_img, mod_pos)
             elif label == 18 and label not in dont_solve: # Password.

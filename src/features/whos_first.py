@@ -4,10 +4,10 @@ import features.util as features_util
 import config
 from model import (classifier_util, dataset_util, character_classifier as classifier)
 
-LABEL_W, LABEL_H = 60, 26
+LABEL_W, LABEL_H = 70, 28
 
 def get_threshold(gray):
-    thresh = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY_INV)[1]
+    thresh = cv2.threshold(gray, 65, 255, cv2.THRESH_BINARY_INV)[1]
     return thresh
 
 def crop_to_screen(img):
@@ -16,9 +16,9 @@ def crop_to_screen(img):
 
 def split_labels(img):
     coords = [
-        (126, 84), (126, 167),
-        (174, 84), (174, 167),
-        (223, 84), (223, 167)
+        (126, 84), (126, 168),
+        (174, 84), (174, 168),
+        (223, 84), (223, 168)
     ]
     w = LABEL_W
     h = LABEL_H
@@ -31,9 +31,17 @@ def split_labels(img):
 
 def get_masked_images(img):
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    # Sort contours by x value.
     contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c))[0])
 
-    contours = features_util.combine_contours(contours, 5)
+    # Filter out contours that have an area of less than 9 (apostrophes fx.).
+    filtered_contours = []
+    for c in contours:
+        if cv2.contourArea(c) > 9:
+            filtered_contours.append(c)
+
+    # Combine contours that are '4' apart from each on the x-axis (or 30 on the y).
+    contours = features_util.combine_contours(filtered_contours, 4, 30)
     masks = []
     for c in contours:
         mask = np.zeros(img.shape, "uint8")
@@ -41,11 +49,19 @@ def get_masked_images(img):
         min_y, max_y, min_x, max_x = features_util.crop_to_content(mask, padding=2)
         masks.append(mask[min_y:max_y, min_x:max_x])
 
+    # Split masks into two, if they are over '24' pixels in width.
+    # This is because some letters are too close to each other for the contours
+    # to be seperated.
     filtered_masks = []
     for mask in masks:
-        h, w = mask.shape
-        if h > 5 or w > 5:
+        if mask.shape[1] > 24:
+            mask1 = mask[:, 0:12]
+            mask2 = mask[:, 12:]
+            filtered_masks.append(mask1)
+            filtered_masks.append(mask2)
+        elif mask.shape[0] > 14 or mask.shape[1] > 14:
             filtered_masks.append(mask)
+
     return filtered_masks
 
 def get_characters(img):
@@ -68,6 +84,12 @@ def get_characters(img):
         masks.extend(word)
     return masks, words, coords
 
+def get_word(prediction):
+    characters = [classifier.LABELS[x] for x in classifier_util.get_best_prediction(prediction)]
+    if characters[0] == "y" and characters[2] == "u":
+        characters[1] = "o"
+    return "".join(characters)
+
 def get_words(img, model):
     _, words, coords = get_characters(img)
     predictions = []
@@ -76,8 +98,7 @@ def get_words(img, model):
         if masks is not None:
             masks = np.array([dataset_util.reshape(mask, config.CHAR_INPUT_DIM[1:]) for mask in masks])
             prediction = classifier.predict(model, masks)
-            best_preds = [classifier.LABELS[x] for x in classifier_util.get_best_prediction(prediction)]
-            result = "".join(best_preds)
+            result = get_word(prediction)
             if result[:4] == "what" and len(result) == 5:
                 result[4] = "?"
         predictions.append(result)
