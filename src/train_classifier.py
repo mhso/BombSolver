@@ -5,10 +5,12 @@ import model.character_classifier as character_classifier
 import model.symbol_classifier as symbol_classifier
 import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
+from model.progress_bar import Progress
 import config
 from debug import log
 
-def train_network(model, classifier, path, train_x, train_y, test_x, test_y, steps=500):
+def train_network(model, classifier, path, train_x, train_y, test_x, test_y, steps=200):
+    prog = Progress(steps)
     for i in range(steps):
         sample_images, sample_labels = dataset_util.sample_data(train_x, train_y, classifier.BATCH_SIZE)
         result = classifier.train(model, sample_images, sample_labels)
@@ -19,8 +21,10 @@ def train_network(model, classifier, path, train_x, train_y, test_x, test_y, ste
         if i % 20 == 0:
             classifier_util.save_to_file(model, path)
             save_string = " - Saving model to file..."
-        print(f"Step {i+1}/{steps} - Real acc: {acc:.3f}% - "
-              + f"Training acc: {model_acc:.3f}% - Model loss: {model_loss}{save_string}")
+        prog.status = (f"Step {i+1}/{steps} - Real acc: {acc:.3f}% - "
+                       + f"Training acc: {model_acc:.3f}% - Model loss: "
+                       + f"{model_loss}{save_string}")
+        prog.increment()
 
 def test_network(model, classifier, test_x, test_y):
     for (image, label) in zip(test_x, test_y):

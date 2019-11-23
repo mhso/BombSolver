@@ -1,6 +1,7 @@
 from time import sleep, time
 from sys import argv
 from math import floor
+import traceback
 from debug import log
 import windows_util as win_util
 from model import (module_classifier, character_classifier, symbol_classifier,
@@ -391,7 +392,7 @@ def solve_whos_on_first(image, char_model, mod_pos):
         image = convert_to_cv2(screenshot_module()[0])
 
 def solve_modules(modules, side_features, character_model, symbol_model, duration):
-    dont_solve = [9, 10, 11, 12, 13, 14, 17, 18, 19]
+    dont_solve = []
     for module, label in enumerate(modules[:12]):
         mod_index = module if module < 6 else module - 6
         if label > 8:
@@ -427,7 +428,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                     solve_morse(cv2_img, mod_pos)
             except Exception as e:
                 log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
-                log(str(e), config.LOG_DEBUG)
+                log(traceback.format_exc(e), config.LOG_DEBUG)
             sleep(0.5)
             deselect_module(mod_index)
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.

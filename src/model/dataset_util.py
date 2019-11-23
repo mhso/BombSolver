@@ -2,7 +2,6 @@ from glob import glob
 from math import floor, ceil
 import numpy as np
 import cv2
-import config
 
 def resize_img(img, new_size):
     return cv2.resize(img, new_size, cv2.INTER_AREA)
@@ -55,7 +54,7 @@ def extract_test_data(images, labels, output_dim, cases_per_label):
         while label == curr_label-1 and end_of_label < labels.shape[0]:
             label = np.where(labels[end_of_label] == 1)[0]
             end_of_label += 1
-        rand_indices = np.random.choice([x for x in range(i, end_of_label)], size=cases_per_label)
+        rand_indices = np.random.choice([x for x in range(i+1, end_of_label)], size=cases_per_label)
         test_labels.extend(labels[r_i] for r_i in rand_indices)
         test_images.extend(images[r_i] for r_i in rand_indices)
         indexes.extend([r_i for r_i in rand_indices])
@@ -73,7 +72,7 @@ def load_dataset(path, label_names, data_dims, tests_per_label=4):
         files = glob(f"{path}{name}/*.png")
         one_hot_labels = [0] * output_dim
         one_hot_labels[label] = 1
-        if len(files) == 0:
+        if files == []:
             images.append(np.zeros(input_dim))
             labels.append(np.array(one_hot_labels))
         for file in files:
