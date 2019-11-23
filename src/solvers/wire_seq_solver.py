@@ -2,14 +2,17 @@ from enum import Enum
 import features.util as features_util
 from debug import log, LOG_DEBUG
 
+# Column entries are the color of the wire,
+# row entries are how many times that color has been seen.
+# Each entry in a tuple means 'cut if connected to...' (A=0, B=1, C=2).
 WIRE_TABLE = [
-    [
-        (2,), (1,), (0, 2), (1,), (0, 2), (0, 1, 2), (0, 1), (1,)
+    [ # Red.
+        (2,), (1,), (0,), (0, 2), (1,), (0, 2), (0, 1, 2), (0, 1), (1,)
     ],
-    [
+    [ # Blue.
         (1,), (0, 2), (1,), (0,), (1,), (1, 2), (2,), (0, 2), (0,)
     ],
-    [
+    [ # Black.
         (0, 1, 2), (0, 2), (1,), (0, 2), (1,), (1, 2), (0, 1), (2,), (2,)
     ]
 ]
@@ -33,13 +36,21 @@ def get_wire_colors(img):
     for i, pixel in enumerate(coords):
         for color, (lo, hi) in enumerate(colors):
             if features_util.color_in_range(pixel, rgb, lo, hi):
-                letters = ["A", "B", "C"]
-                log(f"{Colors(color)} wire from {i//3+1} to {letters[i%3]}",
-                    LOG_DEBUG, "Wire Sequence")
                 coords_to_cut[i // 3] = coords[i]
                 wires[i // 3] = color
                 destinations[i // 3] = i % 3
     return wires, destinations, coords_to_cut
+
+def print_wires(wires, destinations):
+    desc = "Wires:\n"
+    colors = ["Red", "Blue", "Black"]
+    letters = ["A", "B", "C"]
+    for wire, dest in zip(wires, destinations):
+        if wire == -1:
+            desc += "Empty -> Empty"
+        else:
+            desc += f"{colors[wire]:5s} -> {letters[dest]}"
+        log(desc, LOG_DEBUG, module="Wire Sequence")
 
 def determine_cuts(wires, destinations, color_hist):
     Colors = Enum("Colors", {"Red":0, "Blue":1, "Black":2})
@@ -57,9 +68,7 @@ def solve(img, wires_seen):
     assert len(wires) == 3
     assert len(destinations) == 3
     assert len(coords) == 3
-    log(f"Wires: {wires}", LOG_DEBUG, module="Wire Sequence")
-    log(f"Destinations: {destinations}", LOG_DEBUG, module="Wire Sequence")
-    log(f"Coords: {coords}", LOG_DEBUG, module="Wire Sequence")
+    print_wires(wires, destinations)
     cuts, color_hist = determine_cuts(wires, destinations, wires_seen)
     log(f"Wire hist: {wires_seen}", LOG_DEBUG, module="Wire Sequence")
     return (cuts, color_hist, coords)
