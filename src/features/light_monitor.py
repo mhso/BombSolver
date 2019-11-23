@@ -11,11 +11,18 @@ class LightMonitor:
     and monitors the random event in which the
     light turns off during the defusal of the bomb.
     """
-    def __init__(self):
+    def __init__(self, on_explosion):
         self.pixel = (160, 10)
+        self.exploded = False
         self.change_event = Event()
         self.is_active = True
+        self.on_explosion = on_explosion
         Thread(target=self.monitor).start()
+
+    def bomb_exploded(self, rgb):
+        lo = (0, 0, 0)
+        hi = (3, 3, 3)
+        return features_util.color_in_range(self.pixel, rgb, lo, hi)
 
     def monitor(self):
         _, SH = get_screen_size()
@@ -29,10 +36,14 @@ class LightMonitor:
             rgb = features_util.split_channels(img)
             if lights_on:
                 if not features_util.color_in_range(self.pixel, rgb, lo, hi):
-                    log("Lights in the room are turned off. Pausing execution temporarily...")
-                    lights_on = False
-                    self.change_event.clear()
-                    sleep(3)
+                    if self.bomb_exploded(rgb): # We died :(
+                        self.is_active = False
+                        self.on_explosion()
+                    else:
+                        log("Lights in the room are turned off. Pausing execution temporarily...")
+                        lights_on = False
+                        self.change_event.clear()
+                        sleep(3)
             else:
                 if features_util.color_in_range(self.pixel, rgb, lo, hi):
                     log("Lights in the room are turned back on. Resuming...")

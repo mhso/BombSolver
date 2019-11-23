@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import features.util as features_util
 import config
+from debug import log, LOG_DEBUG
 
 def get_stars(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -58,18 +59,20 @@ def get_wire_colors(img, coords):
 
 def get_wire_label(has_star, is_lit, color):
     Color = Enum("Colors", {"Blue":0, "White":1, "Red":2, "Both":3})
-    if color > Color.White.value:
-        if color == Color.Both.value:
+    if color > Color.White.value: # Color is either Blue + Red or just Red.
+        if color == Color.Both.value: # Blue + Red.
             if has_star:
                 if not is_lit:
                     return "P"
             return "S"
-        if has_star:
+        if has_star: # Color is just Red.
             if is_lit:
                 return "B"
             return "C"
+        if is_lit:
+            return "B"
         return "S"
-    elif color == Color.Blue.value:
+    if color == Color.Blue.value:
         if has_star:
             if is_lit:
                 return "P"
@@ -77,11 +80,11 @@ def get_wire_label(has_star, is_lit, color):
         if is_lit:
             return "P"
         return "S"
-    elif has_star:
+    if has_star:
         if is_lit:
             return "B"
         return "C"
-    elif is_lit:
+    if is_lit:
         return "D"
     return "C"
 
@@ -96,14 +99,34 @@ def parse_label(label, features):
         return features["batteries"] >= 2
     return False
 
+def desc_wires(wires, stars, lights):
+    descriptions = []
+    colors = ["Blue", "White", "Red", "Both"]
+    for wire, star, light in zip(wires, stars, lights):
+        if wire == -1:
+            descriptions.append("None")
+        else:
+            desc = colors[wire]
+            if light:
+                desc += " with LED "
+            if star:
+                if light:
+                    desc += "& star"
+                else:
+                    desc += " with star"
+            desc += "."
+            descriptions.append(desc)
+    return descriptions
+
 def solve(img, features):
     wire_coords = [
         (140, 49), (140, 74), (140, 126),
         (140, 168), (140, 190), (140, 226)
     ]
+    wires = get_wire_colors(img, wire_coords)
     stars = get_stars(img)
     lights = get_lights(features_util.split_channels(img))
-    wires = get_wire_colors(img, wire_coords)
+    log(desc_wires(wires, stars, lights), LOG_DEBUG, "Complicated Wires")
     wires_to_cut = []
     for (star, light, wire) in zip(stars, lights, wires):
         if wire == -1:
@@ -111,4 +134,5 @@ def solve(img, features):
             continue
         solve_label = get_wire_label(star, light, wire)
         wires_to_cut.append(parse_label(solve_label, features))
+    log(f"Wires to cut: {wires_to_cut}", LOG_DEBUG, "Complicated Wires")
     return wires_to_cut, wire_coords

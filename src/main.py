@@ -225,7 +225,7 @@ def deselect_module(module):
     offset_x = 300
     offset_y = 300
     win_util.click(300, 300, btn="right")
-    sleep(1)
+    sleep(0.5)
 
 def screenshot_module():
     SW, SH = win_util.get_screen_size()
@@ -428,7 +428,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                     solve_morse(cv2_img, mod_pos)
             except Exception as e:
                 log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
-                log(traceback.format_exc(e), config.LOG_DEBUG)
+                log(traceback.format_exc(0), config.LOG_DEBUG)
             sleep(0.5)
             deselect_module(mod_index)
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
@@ -437,6 +437,10 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             sleep(0.75)
             win_util.mouse_up(SW // 2, SH // 2, btn="right")
             sleep(0.5)
+
+def on_bomb_explosion():
+    log("We exploded... Whoops.")
+    exit(0)
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
@@ -482,9 +486,9 @@ if __name__ == "__main__":
     log(f"Side features: {SIDE_FEATURES}", verbose=config.LOG_DEBUG)
     log(f"Modules: {[module_classifier.LABELS[x] for x in PREDICTIONS[:12]]}", config.LOG_DEBUG)
 
-    LIGHT_MONITOR = LightMonitor() # Monitor whether the light in the room has turned off.
+    LIGHT_MONITOR = LightMonitor(on_bomb_explosion) # Monitor whether the light in the room has turned off.
 
-    # Solve all modules. Back of the bomb first, then from the top, left to right.
+    # Solve all modules. Back of the bomb first, from left to right, top to bottom.
     solve_modules(PREDICTIONS[:12], SIDE_FEATURES, CHAR_MODEL,
                   SYMBOL_MODEL, (TIME_STARTED, MINUTES, SECONDS))
 
