@@ -88,7 +88,8 @@ def solve(img, screenshot_func):
                     checkpoint = time() # Record time of light being lit.
 
                     if duration >= word_pause:
-                        letters += LETTERS[symbols]
+                        letter = LETTERS.get(symbols, '')
+                        letters += letter
                         log("=== END OF WORD ===", LOG_DEBUG, "Morse")
                         break
                     if duration >= letter_pause:

@@ -220,11 +220,9 @@ def select_module(module):
 
 def deselect_module(module):
     SW, SH = win_util.get_screen_size()
-    start_x = SW * 0.35
-    start_y = SH * 0.35
-    offset_x = 300
-    offset_y = 300
-    win_util.click(300, 300, btn="right")
+    x = 300
+    y = 300
+    win_util.click(x, y, btn="right")
     sleep(0.5)
 
 def screenshot_module():
@@ -260,12 +258,13 @@ def solve_wires(image, mod_pos, side_features):
 def solve_button(image, mod_pos, side_features, character_model, duration):
     mod_x, mod_y = mod_pos
     hold = button_solver.solve(image, side_features, character_model)
-    log(f"Hold button: {hold}", config.LOG_DEBUG)
     button_x, button_y = mod_x + 125, mod_y + 175
     if not hold:
+        log(f"Tapping button.", config.LOG_DEBUG, "Button")
         win_util.click(button_x, button_y)
-        sleep(1)
+        sleep(0.5)
     else:
+        log(f"Holding button...", config.LOG_DEBUG, "Button")
         win_util.mouse_move(button_x, button_y)
         win_util.mouse_down(button_x, button_y)
         sleep(0.9) # 48 frames until strip lights up.
@@ -273,7 +272,7 @@ def solve_button(image, mod_pos, side_features, character_model, duration):
         image = convert_to_cv2(SC)
         pixel = (184, 255)
         release_time = button_solver.get_release_time(image, pixel)
-        log(f"Release button at {release_time}", config.LOG_DEBUG)
+        log(f"Release button at {release_time}", config.LOG_DEBUG, "Button")
         release_mouse_at(release_time, duration, button_x, button_y)
 
 def solve_simon(image, mod_pos, side_features):
@@ -294,7 +293,7 @@ def solve_wire_sequence(image, mod_pos):
     mod_x, mod_y = mod_pos
     button_x, button_y = 128 + mod_x, 248 + mod_y
     color_hist = [0, 0, 0]
-    for _ in range(4):
+    for i in range(4):
         wires_to_cut, color_hist, coords = wire_seq_solver.solve(image, color_hist)
         for i, cut in enumerate(wires_to_cut):
             if cut:
@@ -302,7 +301,8 @@ def solve_wire_sequence(image, mod_pos):
                 win_util.click(mod_x + x, mod_y + y)
                 sleep(0.5)
         win_util.click(button_x, button_y)
-        sleep(2)
+        if i < 3:
+            sleep(2)
         image = convert_to_cv2(screenshot_module()[0])
 
 def solve_complicated_wires(image, mod_pos, side_features):
@@ -317,7 +317,7 @@ def solve_complicated_wires(image, mod_pos, side_features):
 def solve_morse(image, mod_pos):
     mod_x, mod_y = mod_pos
     presses, frequency = morse_solver.solve(image, screenshot_module)
-    log(f"Morse frequency: {frequency}.", config.LOG_DEBUG)
+    log(f"Morse frequency: {frequency}.", config.LOG_DEBUG, "Morse")
     button_x, button_y = mod_x + 154, mod_y + 236
     inc_btn_x, inc_btn_y = mod_x + 240, mod_y + 170
     for _ in range(presses):
@@ -426,9 +426,11 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                     solve_password(cv2_img, character_model, mod_pos)
                 elif label == 19 and label not in dont_solve: # Morse.
                     solve_morse(cv2_img, mod_pos)
-            except Exception as e:
+            except KeyboardInterrupt:
+                log("Exiting...")
+            except Exception:
                 log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
-                log(traceback.format_exc(0), config.LOG_DEBUG)
+                log(traceback.format_exc(10), config.LOG_DEBUG)
             sleep(0.5)
             deselect_module(mod_index)
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
@@ -438,13 +440,9 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             win_util.mouse_up(SW // 2, SH // 2, btn="right")
             sleep(0.5)
 
-def on_bomb_explosion():
-    log("We exploded... Whoops.")
-    exit(0)
-
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
-    log("Loading classifier model...")
+    log("Loading classifier models...")
     # Load model for classifying modules.
     MODEL = module_classifier.load_from_file("../resources/trained_models/module_model")
 
@@ -486,7 +484,7 @@ if __name__ == "__main__":
     log(f"Side features: {SIDE_FEATURES}", verbose=config.LOG_DEBUG)
     log(f"Modules: {[module_classifier.LABELS[x] for x in PREDICTIONS[:12]]}", config.LOG_DEBUG)
 
-    LIGHT_MONITOR = LightMonitor(on_bomb_explosion) # Monitor whether the light in the room has turned off.
+    LIGHT_MONITOR = LightMonitor() # Track when the light in the room turns off.
 
     # Solve all modules. Back of the bomb first, from left to right, top to bottom.
     solve_modules(PREDICTIONS[:12], SIDE_FEATURES, CHAR_MODEL,

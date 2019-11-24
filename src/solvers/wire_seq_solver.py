@@ -42,14 +42,15 @@ def get_wire_colors(img):
     return wires, destinations, coords_to_cut
 
 def print_wires(wires, destinations):
-    desc = "Wires:\n"
+    log("Wires:", LOG_DEBUG, module="Wire Sequence")
     colors = ["Red", "Blue", "Black"]
     letters = ["A", "B", "C"]
     for wire, dest in zip(wires, destinations):
+        desc = ""
         if wire == -1:
-            desc += "Empty -> Empty"
+            desc = "Empty -> Empty"
         else:
-            desc += f"{colors[wire]:5s} -> {letters[dest]}"
+            desc = f"{colors[wire]:5s} -> {letters[dest]}"
         log(desc, LOG_DEBUG, module="Wire Sequence")
 
 def determine_cuts(wires, destinations, color_hist):

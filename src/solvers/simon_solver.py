@@ -1,9 +1,9 @@
-from enum import Enum
 from time import sleep, time
 from numpy import array
 import cv2
 import config
 import features.util as feature_util
+from debug import log, LOG_DEBUG
 
 def is_solved(image):
     rgb = feature_util.split_channels(cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
@@ -12,29 +12,30 @@ def is_solved(image):
     lit_high = (50, 255, 50)
     return feature_util.color_in_range(pixel, rgb, lit_low, lit_high)
 
-def get_response_color(color, coords, features):
+def get_response_color(color, features):
     if features["contains_vowel"]:
         if color == 0: # Red.
-            return coords[1] # Press blue.
+            return 1 # Press blue.
         if color == 1: # Blue.
-            return coords[0] # Press red.
+            return 0 # Press red.
         if color == 2: # Green.
-            return coords[3] # Press yellow.
+            return 3 # Press yellow.
         if color == 3: # Yellow.
-            return coords[2] # Press green.
+            return 2 # Press green.
     else:
         if color == 0: # Red.
-            return coords[1] # Press blue.
+            return 1 # Press blue.
         if color == 1: # Blue.
-            return coords[3] # Press yellow.
+            return 3 # Press yellow.
         if color == 2: # Green.
-            return coords[2] # Press green.
+            return 2 # Press green.
         if color == 3: # Yellow.
-            return coords[0] # Press red.
+            return 0 # Press red.
     return -1
 
 def get_next_color(img, sc_func, ranges, features, curr_match):
     coords = [(140, 95), (74, 155), (204, 156), (140, 216)]
+    colors = ["Red", "Blue", "Green", "Yellow"]
     button_coords = []
     rgb = feature_util.split_channels(img)
     pause_between_blinks = 0.35
@@ -47,10 +48,11 @@ def get_next_color(img, sc_func, ranges, features, curr_match):
             coord = coords[i]
             if feature_util.color_in_range(coord, rgb, low, high) and time() - timestamp > pause_between_blinks:
                 colors_matched += 1
-                print(f"Color {colors_matched}: {i}")
-                button_coords.append(get_response_color(i, coords, features))
+                press_color = get_response_color(i, features)
+                button_coords.append(coords[press_color])
                 timestamp = time()
                 if colors_matched == curr_match:
+                    log(f"Color: {colors[i]}. Press: {colors[press_color]}", LOG_DEBUG, "Simon Says")
                     return button_coords
         sleep(0.1) # Lamps are lit for 0.25 seconds.
 

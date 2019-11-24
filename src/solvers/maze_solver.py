@@ -1,6 +1,6 @@
 from enum import Enum
 import features.maze as maze_features
-from debug import log
+from debug import log, LOG_DEBUG
 
 DIRECTIONS = Enum("Directions", {"North":0, "South":1, "West":2, "East":3})
 N = DIRECTIONS.North
@@ -159,11 +159,11 @@ def solve_maze(maze, start, end):
 def solve(img):
     details = maze_features.get_maze_details(img)
     start, end, c_1, c_2 = get_squares(details)
-    log(f"Start square: {start}, end: {end}")
-    log(f"Circles: {c_1} & {c_2}")
+    log(f"Start square: {start}, end: {end}", LOG_DEBUG, "Maze")
+    log(f"Circles: {c_1} & {c_2}", LOG_DEBUG, "Maze")
     circles = sort_circles(c_1, c_2)
     maze_name = MAZE_NAMES[circles]
-    log(f"Maze: {maze_name}")
+    log(f"Maze: {maze_name}", LOG_DEBUG, "Maze")
     maze = MAZES[maze_name]
 
     directions = solve_maze(maze, start, end)

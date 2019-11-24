@@ -1,5 +1,6 @@
 from time import sleep
 from threading import Thread, Event
+from _thread import interrupt_main
 from features import util as features_util
 from windows_util import get_screen_size
 from model.grab_img import screenshot
@@ -11,18 +12,21 @@ class LightMonitor:
     and monitors the random event in which the
     light turns off during the defusal of the bomb.
     """
-    def __init__(self, on_explosion):
+    def __init__(self):
         self.pixel = (160, 10)
         self.exploded = False
         self.change_event = Event()
         self.is_active = True
-        self.on_explosion = on_explosion
         Thread(target=self.monitor).start()
 
     def bomb_exploded(self, rgb):
         lo = (0, 0, 0)
         hi = (3, 3, 3)
         return features_util.color_in_range(self.pixel, rgb, lo, hi)
+
+    def exit_after_explosion(self):
+        log("Bomb Exploded... Whoops.")
+        interrupt_main()
 
     def monitor(self):
         _, SH = get_screen_size()
@@ -38,7 +42,7 @@ class LightMonitor:
                 if not features_util.color_in_range(self.pixel, rgb, lo, hi):
                     if self.bomb_exploded(rgb): # We died :(
                         self.is_active = False
-                        self.on_explosion()
+                        self.exit_after_explosion()
                     else:
                         log("Lights in the room are turned off. Pausing execution temporarily...")
                         lights_on = False

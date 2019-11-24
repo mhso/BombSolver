@@ -95,11 +95,8 @@ def get_button_color(image):
 
 def get_characters(image):
     color = get_button_color(image)
-    color_names = ["White", "Yellow", "Blue", "Red"]
     if color == -1:
-        log("WARNING: Button color could not be determined.", config.LOG_WARNING)
-    else:
-        log(f"Button color: {color_names[color]}", config.LOG_DEBUG)
+        log("WARNING: Button color could not be determined.", config.LOG_WARNING, "Button")
     thresh, contours = get_segmented_image(image, color)
     masks = get_masked_images(image, contours)
     return masks, color
