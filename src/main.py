@@ -9,7 +9,7 @@ from model import (module_classifier, character_classifier, symbol_classifier,
 from model.grab_img import screenshot
 from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
                      wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
-                     maze_solver, password_solver, morse_solver)
+                     maze_solver, password_solver, morse_solver, needy_vent_solver)
 from features.serial_number import get_serial_number
 from features.bomb_duration import get_bomb_duration
 from features.util import convert_to_cv2
@@ -154,8 +154,14 @@ def print_features(features):
     for feature, amount in enumerate(features):
         print(f"{module_classifier.LABELS[feature]} - {amount}")
 
+def get_time_spent(time_started, minutes, seconds):
+    return time() - time_started
+
 def get_time_remaining(time_started, minutes, seconds):
-    return floor((minutes * 60 + seconds) - (time() - time_started))
+    time_spent = get_time_spent(time_started, minutes, seconds)
+    return floor((minutes * 60 + seconds) - (time_spent))
+
+# /========================= BOMB FEATURES =========================\
 
 def serial_contains_vowel(serial_num):
     vowels = ["A", "E", "I", "U", "Y"]
@@ -184,28 +190,35 @@ def extract_side_features(sides, labels, character_model):
     for side in sides:
         for img in side:
             cv2_img = convert_to_cv2(img)
-            if labels[index] == 1:
-                features["batteries"] += 1
-            elif labels[index] == 2:
-                features["batteries"] += 2
-            elif labels[index] == 3: # Serial number.
-                serial_num = get_serial_number(cv2_img, character_model)
-                if serial_num is None:
-                    log(f"Serial number could not be determined.", config.LOG_WARNING)
-                    index += 1
-                    continue
-                log(f"Serial number: {serial_num}", verbose=config.LOG_DEBUG)
-                features["serial_number"] = serial_num
-                serial_features = extract_serial_number_features(serial_num)
-                features.update(serial_features)
-            elif labels[index] == 5: # Parallel port.
-                features["parallel_port"] = True
-            elif labels[index] == 6: # Indicator of some kind.
-                lit, text = get_indicator_features(cv2_img, character_model)
-                desc = "lit_" + text if lit else "unlit_" + text
-                features["indicators"].append(desc)
+            mod_name = module_classifier.LABELS[labels[index]]
+            try:
+                if labels[index] == 1:
+                    features["batteries"] += 1
+                elif labels[index] == 2:
+                    features["batteries"] += 2
+                elif labels[index] == 3: # Serial number.
+                    serial_num = get_serial_number(cv2_img, character_model)
+                    if serial_num is None:
+                        log(f"Serial number could not be determined.", config.LOG_WARNING)
+                        index += 1
+                        continue
+                    log(f"Serial number: {serial_num}", verbose=config.LOG_DEBUG)
+                    features["serial_number"] = serial_num
+                    serial_features = extract_serial_number_features(serial_num)
+                    features.update(serial_features)
+                elif labels[index] == 5: # Parallel port.
+                    features["parallel_port"] = True
+                elif labels[index] == 6: # Indicator of some kind.
+                    lit, text = get_indicator_features(cv2_img, character_model)
+                    desc = "lit_" + text if lit else "unlit_" + text
+                    features["indicators"].append(desc)
+            except Exception:
+                log(f"WARNING: Could not extract features from '{mod_name}'.", config.LOG_WARNING)
+                log(traceback.format_exc(10), config.LOG_DEBUG)
             index += 1
     return features
+
+# /================= MODULE SELECTION / SCREENSHOTTING =================\
 
 def select_module(module):
     SW, SH = win_util.get_screen_size()
@@ -230,6 +243,8 @@ def screenshot_module():
     x = int(SW * 0.43)
     y = int(SH*0.36)
     return screenshot(x, y, 300, 300), x, y
+
+# /========================= MODULE SOLVING =========================\
 
 def release_mouse_at(digit, duration, x, y):
     time_started, minutes, seconds = duration
@@ -391,11 +406,90 @@ def solve_whos_on_first(image, char_model, mod_pos):
             sleep(3.5)
         image = convert_to_cv2(screenshot_module()[0])
 
+# /========================= NEEDY MODULES =========================\
+
+def solve_needy_vent(image, mod_pos):
+    mod_x, mod_y = mod_pos
+    button_y, button_x = needy_vent_solver.solve(image)
+    win_util.click(button_x + mod_x, button_y + mod_y)
+
+def solve_needy_discharge(mod_pos, duration):
+    mod_x, mod_y = mod_pos
+    time_started, minutes, seconds = duration
+    time_spent = get_time_spent(time_started, minutes, seconds)
+    x_top, y_top = mod_x + 230, mod_y + 92
+
+    win_util.mouse_move(x_top, y_top)
+    win_util.mouse_down(x_top, y_top)
+    sleep_time = time_spent / 8
+    sleep(sleep_time)
+    win_util.mouse_up(x_top, y_top)
+
+def needy_modules_critical(needy_modules, duration):
+    if needy_modules == 0:
+        return False
+    time_started, minutes, seconds = duration
+    time_spent = get_time_spent(time_started, minutes, seconds)
+    needy_duration = 45 # Duration before a needy module explodes.
+    time_to_solve = 4 # Approx. time required to solve a needy module.
+    buffer_time = 5
+    threshold = buffer_time + needy_modules * time_to_solve
+    return (needy_duration - time_spent) < threshold
+
+def solve_needy_modules(modules, needy_indices, curr_module, duration):
+    SW, SH = win_util.get_screen_size()
+    prev_index = curr_module
+    timestamp = time() + 2
+    for index in needy_indices:
+        if (index > 5) ^ (prev_index > 5): # Flip the bomb, if needed.
+            flip_bomb(SW, SH)
+            sleep(0.75)
+            win_util.mouse_up(SW // 2, SH // 2, btn="right")
+            sleep(0.5)
+        mod_index = index if index < 6 else index - 6
+        label = modules[index]
+        select_module(mod_index)
+        SC, x, y = screenshot_module()
+        mod_pos = (x, y)
+        cv2_img = convert_to_cv2(SC)
+        mod_name = module_classifier.LABELS[label]
+        log(f"Solving {mod_name}...")
+        try:
+            if label == 20: # Needy Vent Gas.
+                solve_needy_vent(cv2_img, mod_pos)
+            elif label == 21: # Needy Discharge Capacitor.
+                solve_needy_discharge(mod_pos, duration)
+        except Exception:
+            log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
+            log(traceback.format_exc(10), config.LOG_DEBUG)
+        sleep(0.5)
+        deselect_module()
+        prev_index = index
+    # Flip the bomb back to it's original state, if needed.
+    if (curr_module > 5) ^ (prev_index > 5):
+        flip_bomb(SW, SH)
+        sleep(0.75)
+        win_util.mouse_up(SW // 2, SH // 2, btn="right")
+        sleep(0.5)
+    return (timestamp,) + duration[1:]
+
+# /======================= SOLVE ALL MODULES =======================\
+
 def solve_modules(modules, side_features, character_model, symbol_model, duration):
     dont_solve = []
-    for module, label in enumerate(modules[:12]):
+    needy_indices = list(filter(lambda i: modules[i] > 19, [x for x in range(len(modules))]))
+    needy_timestamp = duration
+    log(f"Needy modules: {len(needy_indices)}, Positions: {needy_indices}", config.LOG_DEBUG)
+    solved_modules = 0
+    num_modules = len(list(filter(lambda x: 8 < x < 20, modules)))
+    for module, label in enumerate(modules):
+        bomb_solved = solved_modules < num_modules
+        if bomb_solved and needy_modules_critical(len(needy_indices), needy_timestamp):
+            # Needy modules need attention! Solve them, and continue where we left off.
+            needy_timestamp = solve_needy_modules(modules, needy_indices, module, needy_timestamp)
+
         mod_index = module if module < 6 else module - 6
-        if label > 8:
+        if 8 < label < 20:
             LIGHT_MONITOR.wait_for_light() # If the room is dark, wait for light.
             select_module(mod_index)
             SC, x, y = screenshot_module()
@@ -426,19 +520,22 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                     solve_password(cv2_img, character_model, mod_pos)
                 elif label == 19 and label not in dont_solve: # Morse.
                     solve_morse(cv2_img, mod_pos)
-            except KeyboardInterrupt:
-                log("Exiting...")
             except Exception:
                 log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
                 log(traceback.format_exc(10), config.LOG_DEBUG)
             sleep(0.5)
             deselect_module()
+            solved_modules += 1
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
             SW, SH = win_util.get_screen_size()
             flip_bomb(SW, SH)
             sleep(0.75)
             win_util.mouse_up(SW // 2, SH // 2, btn="right")
             sleep(0.5)
+    if solve_modules == num_modules:
+        log("Phew! We live to defuse another bomb.")
+    else:
+        log("Some modules could not be disarmed, it seems we are doomed...")
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
@@ -486,8 +583,12 @@ if __name__ == "__main__":
 
     LIGHT_MONITOR = LightMonitor() # Track when the light in the room turns off.
 
-    # Solve all modules. Back of the bomb first, from left to right, top to bottom.
-    solve_modules(PREDICTIONS[:12], SIDE_FEATURES, CHAR_MODEL,
-                  SYMBOL_MODEL, (TIME_STARTED, MINUTES, SECONDS))
+    try:
+        # Solve all modules. Back of the bomb first, from left to right, top to bottom.
+        solve_modules(PREDICTIONS[:12], SIDE_FEATURES, CHAR_MODEL,
+                      SYMBOL_MODEL, (TIME_STARTED, MINUTES, SECONDS))
+    except KeyboardInterrupt: # Catch SIGINT from LightMonitor (meaning the bomb exploded).
+        log("Exiting...")
+        exit(0)
 
     LIGHT_MONITOR.shut_down()

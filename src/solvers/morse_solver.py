@@ -93,7 +93,6 @@ def solve(img, screenshot_func):
                         log("=== END OF WORD ===", LOG_DEBUG, "Morse")
                         break
                     if duration >= letter_pause:
-                        log("--- END OF LETTER ---", LOG_DEBUG, "Morse")
                         letter = LETTERS.get(symbols, '')
                         log(f"LETTER: {letter}", LOG_DEBUG, "Morse")
                         letters += letter

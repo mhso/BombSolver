@@ -1,8 +1,11 @@
-import windows_util as win_util
+import cv2
+import features.needy_vent as feat
 
-from main import sleep_until_start
-
-sleep_until_start()
-
-SW, SH = win_util.get_screen_size()
-win_util.mouse_move(int(SW * 0.55), int(SH * 0.35))
+img = cv2.imread("../resources/misc/Vent.png", cv2.IMREAD_COLOR)
+masks = feat.get_characters(img)
+for mask in masks:
+    cv2.imshow("Test", mask)
+    key = cv2.waitKey(0)
+    if key == ord('q'):
+        break
+    cv2.destroyWindow("Test")

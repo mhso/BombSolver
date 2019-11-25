@@ -8,7 +8,7 @@ STEP_1_SOLUTION = {
     "red" : 3, "reed" : 4, "leed" : 4, "holdon" : 5,
     "you" : 3, "youare" : 5, "your": 3, "youre" : 3,
     "ur": 0, "there" : 5, "theyre" : 4, "their": 3,
-    "theyare" : 2, "see" : 5, "u" : 1, "cee" : 5
+    "theyare" : 2, "see" : 5, "c" : 1, "cee" : 5
 }
 
 STEP_2_SOLUTION = {
