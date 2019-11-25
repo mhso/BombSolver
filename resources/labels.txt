@@ -20,3 +20,6 @@
 17: Maze
 18: Password
 19: Morse
+20: Needy Vent
+21: Needy Discharge
+22: Needy Knob

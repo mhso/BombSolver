@@ -28,8 +28,16 @@ AUTO_LABEL = int(argv[3]) if len(argv) > 3 else True
 config.MAX_GPU_FRACTION = 0.2
 MODEL = (None if not AUTO_LABEL else
          classifier.load_from_file("../resources/trained_models/module_model"))
+SW, SH = win_util.get_screen_size()
+X_COORD = int(SW * 0.55)
+LEVEL_COORDS = {
+    "eight_modules" : int(SH * 0.53),
+    "multi-tasker" : int(SH * 0.35),
+    "the_knob" : int(SH * 0.305)
+}
+LEVEL = argv[4] if len(argv) > 4 else "eight_modules"
 
-def restart_level():
+def restart_level(l_x, l_y):
     SW, SH = win_util.get_screen_size()
     win_util.click(int(SW * 0.9), int(SH * 0.8), btn="right")
     sleep(1)
@@ -39,7 +47,7 @@ def restart_level():
     sleep(2)
     win_util.click(int(SW * 0.52), int(SH * 0.53))
     sleep(0.8)
-    win_util.click(int(SW * 0.55), int(SH * 0.53))
+    win_util.click(l_x, l_y)
     sleep(0.5)
 
 def process_bomb_data(images):
@@ -47,15 +55,17 @@ def process_bomb_data(images):
     predictions = []
     for img in images:
         cv2_img = convert_to_cv2(img)
-        resized = dataset_util.reshape(cv2_img, config.MODULE_INPUT_DIM[1:])
-        pred = classifier.predict(MODEL, resized)
-        label = classifier_util.get_best_prediction(pred)[0]
-        predictions.append(label)
-        if label in INCLUDED_LABELS and DATA_TYPE != "modules":
-            path = f"../resources/training_images/"
-            if label < 7:
-                label_name = clean_file_path(classifier.LABELS[label])
-                path = f"{path}{label_name}/"
+        path = f"../resources/training_images/"
+        if AUTO_LABEL:
+            resized = dataset_util.reshape(cv2_img, config.MODULE_INPUT_DIM[1:])
+            pred = classifier.predict(MODEL, resized)
+            label = classifier_util.get_best_prediction(pred)[0]
+            predictions.append(label)
+            if label in INCLUDED_LABELS:
+                if label < 7:
+                    label_name = clean_file_path(classifier.LABELS[label])
+                    path = f"{path}{label_name}/"
+        if DATA_TYPE != "modules":
             num_images = len(glob(path + "*.png"))
             imwrite(f"{path}{num_images:03d}.png", cv2_img)
             IMAGES_CAPTURED += 1
@@ -87,9 +97,9 @@ def process_module_data(images, predictions=None):
 
     log(f"Captured {IMAGES_CAPTURED} module images.")
 
-inspect_str = "infinitely many" if INSPECTIONS == -1 else str(INSPECTIONS)
-suffix = "times" if INSPECTIONS != 1 else "time"
-log(f"Running {inspect_str} {suffix}.")
+INSPECT_STR = "infinitely many" if INSPECTIONS == -1 else str(INSPECTIONS)
+SUFFIX = "times" if INSPECTIONS != 1 else "time"
+log(f"Running {INSPECT_STR} {SUFFIX}.")
 log(f"Auto labeling {'enabled' if AUTO_LABEL else 'disabled'}.")
 
 log("Waiting for user to press S")
@@ -98,14 +108,14 @@ main.sleep_until_start()
 while INSPECTIONS:
     if "skip" not in argv:
         main.start_level()
-    main.await_level_start()
+        main.await_level_start()
 
-    data = inspect_bomb.inspect()
-    PREDICTIONS = process_bomb_data(data)
+    DATA = inspect_bomb.inspect()
+    PREDICTIONS = process_bomb_data(DATA)
     if DATA_TYPE in ("modules", "both"):
         PREDICTIONS = PREDICTIONS[:12]
-        data, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_LABELS)
-        process_module_data(data, FILTERED_PREDICTIONS)
+        DATA, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_LABELS)
+        process_module_data(DATA, FILTERED_PREDICTIONS)
     if "skip" not in argv or INSPECTIONS > 1:
-        restart_level()
+        restart_level(X_COORD, LEVEL_COORDS[LEVEL])
     INSPECTIONS -= 1

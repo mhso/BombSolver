@@ -30,7 +30,10 @@ LABELS = [
     "Who's On First?",
     "Maze",
     "Password",
-    "Morse"
+    "Morse",
+    "Needy Vent",
+    "Needy Discharge",
+    "Needy Knob"
 ]
 
 # Layer constants.

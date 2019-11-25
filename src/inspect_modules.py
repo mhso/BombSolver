@@ -15,7 +15,7 @@ def inspect(labels, labels_to_inspect):
             SC, _, _ = main.screenshot_module()
             images.append(SC)
             filtered_labels.append(labels[module])
-            main.deselect_module(mod_index)
+            main.deselect_module()
             sleep(0.5)
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
             SW, SH = win_util.get_screen_size()

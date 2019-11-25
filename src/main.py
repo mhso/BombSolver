@@ -218,7 +218,7 @@ def select_module(module):
     win_util.click(x, y)
     sleep(1)
 
-def deselect_module(module):
+def deselect_module():
     SW, SH = win_util.get_screen_size()
     x = 300
     y = 300
@@ -432,7 +432,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                 log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
                 log(traceback.format_exc(10), config.LOG_DEBUG)
             sleep(0.5)
-            deselect_module(mod_index)
+            deselect_module()
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
             SW, SH = win_util.get_screen_size()
             flip_bomb(SW, SH)

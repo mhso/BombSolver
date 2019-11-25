@@ -1,13 +1,8 @@
-from glob import glob
-import cv2
-import features.whos_first as whos_first_feat
+import windows_util as win_util
 
-FILE = "../resources/training_images/whos_on_first/000.png"
-img = cv2.imread(FILE, cv2.IMREAD_COLOR)
-masks, _, _ = whos_first_feat.get_characters(img)
-for mask in masks:
-    cv2.imshow("Test", mask)
-    key = cv2.waitKey(0)
-    if key == ord('q'):
-        exit(0)
-    cv2.destroyWindow("Test")
+from main import sleep_until_start
+
+sleep_until_start()
+
+SW, SH = win_util.get_screen_size()
+win_util.mouse_move(int(SW * 0.55), int(SH * 0.35))
