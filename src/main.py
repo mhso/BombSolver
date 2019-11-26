@@ -9,7 +9,7 @@ from model import (module_classifier, character_classifier, symbol_classifier,
 from model.grab_img import screenshot
 from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
                      wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
-                     maze_solver, password_solver, morse_solver, needy_vent_solver)
+                     maze_solver, password_solver, morse_solver, needy_vent_solver, needy_knob_solver)
 from features.serial_number import get_serial_number
 from features.bomb_duration import get_bomb_duration
 from features.util import convert_to_cv2
@@ -154,11 +154,11 @@ def print_features(features):
     for feature, amount in enumerate(features):
         print(f"{module_classifier.LABELS[feature]} - {amount}")
 
-def get_time_spent(time_started, minutes, seconds):
+def get_time_spent(time_started):
     return time() - time_started
 
 def get_time_remaining(time_started, minutes, seconds):
-    time_spent = get_time_spent(time_started, minutes, seconds)
+    time_spent = get_time_spent(time_started)
     return floor((minutes * 60 + seconds) - (time_spent))
 
 # /========================= BOMB FEATURES =========================\
@@ -413,33 +413,40 @@ def solve_needy_vent(image, mod_pos):
     button_y, button_x = needy_vent_solver.solve(image)
     win_util.click(button_x + mod_x, button_y + mod_y)
 
-def solve_needy_discharge(mod_pos, duration):
+def solve_needy_discharge(mod_pos, time_started):
     mod_x, mod_y = mod_pos
-    time_started, minutes, seconds = duration
-    time_spent = get_time_spent(time_started, minutes, seconds)
+    time_spent = get_time_spent(time_started)
     x_top, y_top = mod_x + 230, mod_y + 92
 
     win_util.mouse_move(x_top, y_top)
     win_util.mouse_down(x_top, y_top)
-    sleep_time = time_spent / 8
+    sleep_time = time_spent / 6
     sleep(sleep_time)
     win_util.mouse_up(x_top, y_top)
 
-def needy_modules_critical(needy_modules, duration):
+def solve_needy_knob(image, mod_pos):
+    mod_x, mod_y = mod_pos
+    dial_x, dial_y = mod_x + 150, mod_y + 161
+    num_turns = needy_knob_solver.solve(image)
+    for _ in range(num_turns):
+        win_util.click(dial_x, dial_y)
+        sleep(0.3)
+
+def needy_modules_critical(needy_modules, time_started):
     if needy_modules == 0:
         return False
-    time_started, minutes, seconds = duration
-    time_spent = get_time_spent(time_started, minutes, seconds)
-    needy_duration = 45 # Duration before a needy module explodes.
+    time_spent = get_time_spent(time_started)
+    needy_duration = 40 # Duration before a needy module explodes.
     time_to_solve = 4 # Approx. time required to solve a needy module.
     buffer_time = 5
     threshold = buffer_time + needy_modules * time_to_solve
+    log(f"Time until needy module: {(needy_duration - time_spent) - threshold}s")
     return (needy_duration - time_spent) < threshold
 
 def solve_needy_modules(modules, needy_indices, curr_module, duration):
     SW, SH = win_util.get_screen_size()
     prev_index = curr_module
-    timestamp = time() + 2
+    timestamp = None
     for index in needy_indices:
         if (index > 5) ^ (prev_index > 5): # Flip the bomb, if needed.
             flip_bomb(SW, SH)
@@ -459,9 +466,13 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
                 solve_needy_vent(cv2_img, mod_pos)
             elif label == 21: # Needy Discharge Capacitor.
                 solve_needy_discharge(mod_pos, duration)
+            elif label == 22: # Solve Knob.
+                solve_needy_knob(cv2_img, mod_pos)
         except Exception:
             log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
             log(traceback.format_exc(10), config.LOG_DEBUG)
+        if timestamp is None:
+            timestamp = time()
         sleep(0.5)
         deselect_module()
         prev_index = index
@@ -471,24 +482,28 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
         sleep(0.75)
         win_util.mouse_up(SW // 2, SH // 2, btn="right")
         sleep(0.5)
-    return (timestamp,) + duration[1:]
+    return timestamp
 
 # /======================= SOLVE ALL MODULES =======================\
 
 def solve_modules(modules, side_features, character_model, symbol_model, duration):
     dont_solve = []
     needy_indices = list(filter(lambda i: modules[i] > 19, [x for x in range(len(modules))]))
-    needy_timestamp = duration
+    needy_timestamp = duration[0]
+    module_durations = [2, 5, 2, 12, 10, 3, 14, 8, 8, 20]
     log(f"Needy modules: {len(needy_indices)}, Positions: {needy_indices}", config.LOG_DEBUG)
+
     solved_modules = 0
     num_modules = len(list(filter(lambda x: 8 < x < 20, modules)))
     for module, label in enumerate(modules):
-        bomb_solved = solved_modules < num_modules
-        if bomb_solved and needy_modules_critical(len(needy_indices), needy_timestamp):
+        mod_index = module if module < 6 else module - 6
+        bomb_solved = solved_modules == num_modules
+        mod_duration = module_durations[mod_index-9]
+        critical = needy_modules_critical(len(needy_indices), needy_timestamp + mod_duration)
+        if not bomb_solved and critical:
             # Needy modules need attention! Solve them, and continue where we left off.
             needy_timestamp = solve_needy_modules(modules, needy_indices, module, needy_timestamp)
 
-        mod_index = module if module < 6 else module - 6
         if 8 < label < 20:
             LIGHT_MONITOR.wait_for_light() # If the room is dark, wait for light.
             select_module(mod_index)

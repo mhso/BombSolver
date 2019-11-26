@@ -39,15 +39,16 @@ def solve(img, model, sc_func, click_func):
         match = word_matching_prefix(characters[:index])
         attemp_prefix = characters[:index-1]
         attempts = get_attempts(attemp_prefix, attempted_words)
-        if match is not None:
+        if attempts > 5:
+            index -= 1
+        while match is not None:
             if match != prev_search_word:
                 log(f"Attempting to write '{match}'", LOG_DEBUG, "Password")
             prev_search_word = match
             if index == 5:
                 return True # Match found.
             index += 1
-        elif attempts > 4:
-            index -= 1
+            match = word_matching_prefix(characters[:index])
         if index == 0: # No passwords were found.
             break
         if attempts == 0:
