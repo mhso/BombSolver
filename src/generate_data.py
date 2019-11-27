@@ -14,17 +14,17 @@ import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import config
 
-#INCLUDED_LABELS = (3, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19)
-INCLUDED_LABELS = (11, 15, 16, 18)
+INCLUDED_LABELS = (16, 18, 20, 21, 22)
 INSPECTIONS = -1
 if len(argv) > 1:
     if argv[1] in ("-h", "-help"):
         print("Usage: python generate_data.py " +
-              "[type (modules|bomb|both)] [inspections] [auto_label]")
+              "[type (modules|bomb|both)] [inspections] " +
+              "[auto_label] [level_name]")
         exit(0)
     DATA_TYPE = argv[1]
 INSPECTIONS = int(argv[2]) if len(argv) > 2 else -1
-AUTO_LABEL = int(argv[3]) if len(argv) > 3 else True
+AUTO_LABEL = bool(argv[3]) if len(argv) > 3 else True
 config.MAX_GPU_FRACTION = 0.2
 MODEL = (None if not AUTO_LABEL else
          classifier.load_from_file("../resources/trained_models/module_model"))
@@ -33,7 +33,8 @@ X_COORD = int(SW * 0.55)
 LEVEL_COORDS = {
     "eight_modules" : int(SH * 0.53),
     "multi-tasker" : int(SH * 0.35),
-    "the_knob" : int(SH * 0.305)
+    "the_knob" : int(SH * 0.305),
+    "hardcore" : int(SH * 0.55)
 }
 LEVEL = argv[4] if len(argv) > 4 else "eight_modules"
 

@@ -29,6 +29,17 @@ def split_labels(img):
         images.append(cv2.cvtColor(img[y:y+h, x:x+w, :], cv2.COLOR_BGR2GRAY))
     return images, coords
 
+def repair_gaps(img):
+    y = int(img.shape[0] / 2) - 2
+    last_white = 0
+    for x in range(img.shape[1]):
+        white = img[y, x] == 255
+        if white and img[y, x-1] == 0 and x - last_white < 3:
+            img[y-2:y+2, x-3:x] = 255
+        if white:
+            last_white = x
+    return img
+
 def get_masked_images(img):
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     # Sort contours by x value.
@@ -68,6 +79,12 @@ def get_characters(img):
     screen = crop_to_screen(img)
     screen = 255 - screen
     thresh = get_threshold(screen)
+    thresh = repair_gaps(thresh)
+    cv2.imshow("Test", thresh)
+    key = cv2.waitKey(0)
+    if key == ord('q'):
+        exit(0)
+    cv2.destroyWindow("Test")
     screen_masks = get_masked_images(thresh)
     words = [screen_masks]
     masks = []
