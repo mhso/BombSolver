@@ -111,8 +111,12 @@ while INSPECTIONS:
         main.start_level()
         main.await_level_start()
 
-    DATA = inspect_bomb.inspect()
-    PREDICTIONS = process_bomb_data(DATA)
+    IMAGES = inspect_bomb.inspect_bomb()
+    DATA = inspect_bomb.partition_sides(IMAGES)
+    FLATTENED = DATA[0]
+    FLATTENED.extend(DATA[1])
+    FLATTENED.extend(DATA[2])
+    PREDICTIONS = process_bomb_data(FLATTENED)
     if DATA_TYPE in ("modules", "both"):
         PREDICTIONS = PREDICTIONS[:12]
         DATA, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_LABELS)
