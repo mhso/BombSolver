@@ -40,7 +40,7 @@ def repair_gaps(img):
             last_white = x
     return img
 
-def get_masked_images(img):
+def get_masked_images(img, x_dist):
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     # Sort contours by x value.
     contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c))[0])
@@ -52,7 +52,7 @@ def get_masked_images(img):
             filtered_contours.append(c)
 
     # Combine contours that are '4' apart from each on the x-axis (or 30 on the y).
-    contours = features_util.combine_contours(filtered_contours, 4, 30)
+    contours = features_util.combine_contours(filtered_contours, x_dist, 30)
     masks = []
     for c in contours:
         mask = np.zeros(img.shape, "uint8")
@@ -79,13 +79,8 @@ def get_characters(img):
     screen = crop_to_screen(img)
     screen = 255 - screen
     thresh = get_threshold(screen)
-    thresh = repair_gaps(thresh)
-    cv2.imshow("Test", thresh)
-    key = cv2.waitKey(0)
-    if key == ord('q'):
-        exit(0)
-    cv2.destroyWindow("Test")
-    screen_masks = get_masked_images(thresh)
+    #thresh = repair_gaps(thresh)
+    screen_masks = get_masked_images(thresh, 6)
     words = [screen_masks]
     masks = []
     if screen_masks == []: # Word on the screen is blank (empty).
@@ -93,10 +88,10 @@ def get_characters(img):
         words = [screen_masks]
     else:
         masks = [m for m in screen_masks]
-    labels, coords = split_labels(img)
-    for image in labels:
+    label_images, coords = split_labels(img)
+    for image in label_images:
         thresh = get_threshold(image)
-        word = get_masked_images(thresh)
+        word = get_masked_images(thresh, 4)
         words.append(word)
         masks.extend(word)
     return masks, words, coords

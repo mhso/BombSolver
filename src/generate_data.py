@@ -14,7 +14,7 @@ import model.classifier_util as classifier_util
 import model.dataset_util as dataset_util
 import config
 
-INCLUDED_LABELS = (16, 18, 20, 21, 22)
+INCLUDED_LABELS = (16, 22)
 INSPECTIONS = -1
 if len(argv) > 1:
     if argv[1] in ("-h", "-help"):

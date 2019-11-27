@@ -19,14 +19,14 @@ WIRE_TABLE = [
 
 def get_wire_colors(img):
     Colors = Enum("Colors", {"Red":0, "Blue":1, "Black":2})
-    coords = [
+    coords = [ # Top to bottom.
         (91, 86), (102, 100), (102, 80),
         (127, 106), (138, 90), (146, 90),
         (174, 91), (173, 111), (184, 106)
     ]
     colors = [ # Red, Blue & Black.
         ((139, 0, 0), (255, 99, 71)),
-        ((30, 30, 120), (100, 100, 255)),
+        ((20, 20, 120), (130, 130, 255)),
         ((0, 0, 0), (10, 10, 10))
     ]
     rgb = features_util.split_channels(img)

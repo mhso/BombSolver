@@ -1,8 +1,8 @@
 from time import sleep, time
 from sys import argv
 from math import floor
-import traceback
-from debug import log
+from cv2 import imwrite
+from debug import log, handle_module_exception
 import windows_util as win_util
 from model import (module_classifier, character_classifier, symbol_classifier,
                    classifier_util, dataset_util)
@@ -213,8 +213,7 @@ def extract_side_features(sides, labels, character_model):
                     desc = "lit_" + text if lit else "unlit_" + text
                     features["indicators"].append(desc)
             except Exception:
-                log(f"WARNING: Could not extract features from '{mod_name}'.", config.LOG_WARNING)
-                log(traceback.format_exc(10), config.LOG_DEBUG)
+                handle_module_exception(mod_name, cv2_img)
             index += 1
     return features
 
@@ -420,7 +419,7 @@ def solve_needy_discharge(mod_pos, time_started):
 
     win_util.mouse_move(x_top, y_top)
     win_util.mouse_down(x_top, y_top)
-    sleep_time = time_spent / 6
+    sleep_time = 1 + (time_spent / 5)
     sleep(sleep_time)
     win_util.mouse_up(x_top, y_top)
 
@@ -432,16 +431,17 @@ def solve_needy_knob(image, mod_pos):
         win_util.click(dial_x, dial_y)
         sleep(0.3)
 
-def needy_modules_critical(needy_modules, time_started):
+def needy_modules_critical(needy_modules, time_started, mod_duration):
     if needy_modules == 0:
         return False
-    time_spent = get_time_spent(time_started)
+    time_spent = get_time_spent(time_started) + mod_duration
     needy_duration = 40 # Duration before a needy module explodes.
     time_to_solve = 4 # Approx. time required to solve a needy module.
-    buffer_time = 5
-    threshold = buffer_time + needy_modules * time_to_solve
-    log(f"Time until needy module: {(needy_duration - time_spent) - threshold}s")
-    return (needy_duration - time_spent) < threshold
+    threshold = needy_modules * time_to_solve
+    timeleft = needy_duration - time_spent
+    flavor_str = f"in: {(timeleft - threshold):.1f}s" if timeleft >= threshold else "now!"
+    log(f"Need to solve needy modules {flavor_str}", config.LOG_DEBUG)
+    return timeleft < threshold
 
 def solve_needy_modules(modules, needy_indices, curr_module, duration):
     SW, SH = win_util.get_screen_size()
@@ -469,10 +469,10 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
             elif label == 22: # Solve Knob.
                 solve_needy_knob(cv2_img, mod_pos)
         except Exception:
-            log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
-            log(traceback.format_exc(10), config.LOG_DEBUG)
+            handle_module_exception(mod_name, cv2_img)
         if timestamp is None:
-            timestamp = time()
+            cooldown_time = 5
+            timestamp = time() + cooldown_time
         sleep(0.5)
         deselect_module()
         prev_index = index
@@ -490,22 +490,22 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
     dont_solve = []
     needy_indices = list(filter(lambda i: modules[i] > 19, [x for x in range(len(modules))]))
     needy_timestamp = duration[0]
-    module_durations = [2, 5, 2, 12, 10, 3, 14, 8, 8, 20]
+    module_durations = [2, 5, 2, 12, 10, 2, 14, 8, 8, 8, 25]
     log(f"Needy modules: {len(needy_indices)}, Positions: {needy_indices}", config.LOG_DEBUG)
 
     solved_modules = 0
     num_modules = len(list(filter(lambda x: 8 < x < 20, modules)))
     for module, label in enumerate(modules):
+        LIGHT_MONITOR.wait_for_light() # If the room is dark, wait for light.
         mod_index = module if module < 6 else module - 6
         bomb_solved = solved_modules == num_modules
-        mod_duration = module_durations[mod_index-9]
-        critical = needy_modules_critical(len(needy_indices), needy_timestamp + mod_duration)
+        mod_duration = 2 if label > 19 else module_durations[label-9]
+        critical = needy_modules_critical(len(needy_indices), needy_timestamp, mod_duration)
         if not bomb_solved and critical:
             # Needy modules need attention! Solve them, and continue where we left off.
             needy_timestamp = solve_needy_modules(modules, needy_indices, module, needy_timestamp)
 
         if 8 < label < 20:
-            LIGHT_MONITOR.wait_for_light() # If the room is dark, wait for light.
             select_module(mod_index)
             SC, x, y = screenshot_module()
             mod_pos = (x, y)
@@ -536,8 +536,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                 elif label == 19 and label not in dont_solve: # Morse.
                     solve_morse(cv2_img, mod_pos)
             except Exception:
-                log(f"WARNING: Could not solve '{mod_name}'.", config.LOG_WARNING)
-                log(traceback.format_exc(10), config.LOG_DEBUG)
+                handle_module_exception(mod_name, cv2_img)
             sleep(0.5)
             deselect_module()
             solved_modules += 1
@@ -547,7 +546,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             sleep(0.75)
             win_util.mouse_up(SW // 2, SH // 2, btn="right")
             sleep(0.5)
-    if solve_modules == num_modules:
+    if solved_modules == num_modules:
         log("Phew! We live to defuse another bomb.")
     else:
         log("Some modules could not be disarmed, it seems we are doomed...")

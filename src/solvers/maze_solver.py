@@ -97,12 +97,10 @@ MAZE_NAMES = {
     (2, 1, 0, 4) : "MAZE_9",
 }
 
-def get_squares(details):
-    start, end, c_1, c_2 = details
+def get_circles(details):
+    c_1, c_2 = details
     width = 25
     return (
-        (int(start[0] // width), int(start[1] // width)),
-        (int(end[0] // width), int(end[1] // width)),
         (int(c_1[0] // width), int(c_1[1] // width)),
         (int(c_2[0] // width), int(c_2[1] // width))
     )
@@ -157,8 +155,8 @@ def solve_maze(maze, start, end):
     return edge_to
 
 def solve(img):
-    details = maze_features.get_maze_details(img)
-    start, end, c_1, c_2 = get_squares(details)
+    start, end, contours = maze_features.get_maze_details(img)
+    c_1, c_2 = get_circles(contours)
     log(f"Start square: {start}, end: {end}", LOG_DEBUG, "Maze")
     log(f"Circles: {c_1} & {c_2}", LOG_DEBUG, "Maze")
     circles = sort_circles(c_1, c_2)

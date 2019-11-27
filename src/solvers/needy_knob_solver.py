@@ -53,7 +53,7 @@ def solve(img):
     leds = knob_features.get_led_states(img)
 
     up_index = directions.index(True)
-    down_index = 2 - up_index
+    down_index = 4 - up_index if up_index % 2 == 1 else 2 - up_index
     right_index = (up_index + 1) % 4
     left_index = (down_index + 1) % 4
 
@@ -63,12 +63,13 @@ def solve(img):
     aligned_dirs[2] = down_index
     aligned_dirs[3] = left_index
     desired_pos = get_desired_orientation(leds)
-    orientations = ["Up", "Right", "Down", "Left"]
-    desc = orientations[desired_pos]
+    dirs = ["Up", "Right", "Down", "Left"]
 
     for i in range(4):
-        log(f"{desc} is at index '{aligned_dirs.index(i)}' clock-wise.")
+        log(f"{dirs[i]} is at index '{aligned_dirs.index(i)}' clock-wise.")
 
-    log(f"Knob needs to be in the '{desc}' position.", LOG_DEBUG, "Needy Knob")
+    log(f"Knob needs to be in the '{dirs[desired_pos]}' position.", LOG_DEBUG, "Needy Knob")
+    log(f"Knob Dial is point at position {dial_orientation}")
     turns = desired_pos - dial_orientation
+    log(f"Turn knob {turns} times.", LOG_DEBUG, "Needy Knob")
     return turns

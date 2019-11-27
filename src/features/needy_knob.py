@@ -6,16 +6,13 @@ def get_threshold(img):
     thresh = cv2.threshold(gray, 70, 255, cv2.THRESH_BINARY_INV)[1]
     return thresh
 
-def get_direction(img):
-    return img
-
 def segment_image(img):
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c))[0])
     contours = features_util.combine_contours(contours, 3, 20)
 
     for c in contours:
-        if cv2.contourArea(c[0]) > 15:
+        if 15 < cv2.contourArea(c[0]) < 35:
             return True
     return False
 
