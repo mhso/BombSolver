@@ -82,7 +82,9 @@ else:
     MODEL, _, _ = CLASSIFIER.build_model()
 
     log("Training network...")
-    STEPS = 600 if DATA_TYPE == "modules" else 200
+    STEPS = 600 if DATA_TYPE == "modules" else 400
+    if len(argv) > 2:
+        STEPS = int(argv[2])
     train_network(MODEL, CLASSIFIER, MODEL_PATH, X_TRAIN, Y_TRAIN, X_TEST, Y_TEST, STEPS)
 
     log("Saving model to file...")

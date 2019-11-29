@@ -30,35 +30,46 @@ def split_labels(img):
     return images, coords
 
 def repair_gaps(img):
-    y = int(img.shape[0] / 2) - 2
+    y = int(img.shape[0] / 2)
     last_white = 0
     for x in range(img.shape[1]):
         white = img[y, x] == 255
         if white and img[y, x-1] == 0 and x - last_white < 3:
-            img[y-2:y+2, x-3:x] = 255
+            img[y, x-2:x] = 255
         if white:
             last_white = x
     return img
+
+def split_letters(img, thresh_x):
+    white_gap = 0
+    prev_cutoff = 0
+    images = []
+    for x in range(img.shape[1]):
+        white = np.any(img[:, x] == 255)
+        if white:
+            white_gap += 1
+        else:
+            if white_gap > thresh_x:
+                images.append(img[:, prev_cutoff:x])
+                prev_cutoff = x
+            white_gap = 0
+    return images
 
 def get_masked_images(img, x_dist):
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     # Sort contours by x value.
     contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c))[0])
 
-    # Filter out contours that have an area of less than 9 (apostrophes fx.).
-    filtered_contours = []
-    for c in contours:
-        if cv2.contourArea(c) > 8:
-            filtered_contours.append(c)
-
-    # Combine contours that are '4' apart from each on the x-axis (or 30 on the y).
-    contours = features_util.combine_contours(filtered_contours, x_dist, 30)
+    # Combine contours that are less than 'x_dist' apart from each on the x-axis (or 30 on the y).
+    contours = features_util.combine_contours(contours, x_dist, 40)
+    #contours = features_util.combine_contours_better(filtered_contours, x_dist, 30)
     masks = []
     for c in contours:
         mask = np.zeros(img.shape, "uint8")
         cv2.drawContours(mask, c, -1, (255, 255, 255), -1)
         min_y, max_y, min_x, max_x = features_util.crop_to_content(mask, padding=2)
-        masks.append(mask[min_y:max_y, min_x:max_x])
+        mask = mask[min_y:max_y, min_x:max_x]
+        masks.append(mask)
 
     # Split masks into two, if they are over '24' pixels in width.
     # This is because some letters are too close to each other for the contours
@@ -79,8 +90,8 @@ def get_characters(img):
     screen = crop_to_screen(img)
     screen = 255 - screen
     thresh = get_threshold(screen)
-    #thresh = repair_gaps(thresh)
-    screen_masks = get_masked_images(thresh, 6)
+    thresh = repair_gaps(thresh)
+    screen_masks = get_masked_images(thresh, 5)
     words = [screen_masks]
     masks = []
     if screen_masks == []: # Word on the screen is blank (empty).

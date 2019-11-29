@@ -3,7 +3,7 @@ import features.whos_first
 import features.needy_knob
 import features.maze
 
-img = cv2.imread("../resources/misc/error_imgs/3.png", cv2.IMREAD_COLOR)
+img = cv2.imread("../resources/misc/error_imgs/6.png", cv2.IMREAD_COLOR)
 masks = features.whos_first.get_characters(img)[0]
 mask = features.needy_knob.get_threshold(img)
 for mask in masks:

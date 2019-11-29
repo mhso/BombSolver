@@ -440,11 +440,11 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                     solve_password(cv2_img, character_model, mod_pos)
                 elif label == 19 and label not in dont_solve: # Morse.
                     solve_morse(cv2_img, mod_pos)
+                solved_modules += 1
             except Exception:
                 handle_module_exception(mod_name, cv2_img)
             sleep(0.5)
             deselect_module()
-            solved_modules += 1
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
             SW, SH = win_util.get_screen_size()
             flip_bomb(SW, SH)
