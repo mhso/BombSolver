@@ -1,7 +1,6 @@
 from time import sleep, time
 from sys import argv
 from math import floor
-from cv2 import imwrite
 from debug import log, handle_module_exception
 import windows_util as win_util
 from model import (module_classifier, character_classifier, symbol_classifier,
@@ -70,8 +69,8 @@ def get_time_remaining(time_started, minutes, seconds):
 
 def serial_contains_vowel(serial_num):
     vowels = ["A", "E", "I", "U", "Y"]
-    for c in serial_num:
-        if c in vowels:
+    for char in serial_num:
+        if char in vowels:
             return True
     return False
 
@@ -139,7 +138,6 @@ def select_module(module):
     sleep(1)
 
 def deselect_module():
-    SW, SH = win_util.get_screen_size()
     x = 300
     y = 300
     win_util.click(x, y, btn="right")
@@ -254,7 +252,7 @@ def solve_symbols(image, mod_pos, symbol_model):
         return
     for y, x in coords:
         win_util.click(mod_x + x, mod_y + y)
-        sleep(0.5)
+        sleep(0.3)
 
 def solve_maze(image, mod_pos):
     mod_x, mod_y = mod_pos

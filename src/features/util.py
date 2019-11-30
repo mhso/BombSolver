@@ -59,19 +59,6 @@ def contour_within(small, large, x_dist):
              bbox_large[0] + bbox_large[2] > bbox_small[0] + bbox_small[2] and
              bbox_large[1] + bbox_large[3] > bbox_small[1] + bbox_small[3]))
 
-def combine_contours_better(contours, thresh_x, thresh_y=None):
-    combined_contours = []
-    curr_contours = [contours[0]]
-    print(len(contours))
-    for i, c in enumerate(contours[1:], 1):
-        prev = curr_contours[-1]
-        if not contour_within(c, prev, thresh_x):
-            combined_contours.append(curr_contours)
-            curr_contours = []
-        curr_contours.append(c)
-    combined_contours.append([contours[-1]])
-    return combined_contours
-
 def largest_bounding_rect(contours):
     min_x = 9999
     min_y = 9999

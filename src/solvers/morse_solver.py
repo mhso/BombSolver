@@ -105,7 +105,7 @@ def solve(img, screenshot_func):
                         log(f"LETTER: {letter}", LOG_DEBUG, "Morse")
                         letters += letter
                         if i == 1 and get_word_from_prefix(letters) is not None:
-                            break
+                            break # Terminate if we can already guess the word.
                         symbols = ""
                     if duration >= word_pause:
                         pos_str = "START" if i == 0 else "END"
