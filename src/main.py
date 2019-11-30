@@ -41,7 +41,7 @@ def await_level_start():
     """
     Sleep until the given level has started (i.e. timer on bomb has started).
     """
-    sleep(16.4)
+    sleep(16.8)
 
 def identify_side_features(sides, model):
     predictions = [0] * 32
@@ -117,6 +117,9 @@ def extract_side_features(sides, labels, character_model):
                     lit, text = get_indicator_features(cv2_img, character_model)
                     desc = "lit_" + text if lit else "unlit_" + text
                     features["indicators"].append(desc)
+            except KeyboardInterrupt:
+                handle_module_exception(mod_name, cv2_img)
+                raise KeyboardInterrupt
             except Exception:
                 handle_module_exception(mod_name, cv2_img)
             index += 1
@@ -203,7 +206,6 @@ def solve_simon(image, mod_pos, side_features):
             button_y, button_x = coords
             win_util.click(mod_x + button_x, mod_y + button_y)
             sleep(0.5)
-        sleep(1)
         num += 1
         SC, _, _ = screenshot_module()
         image = convert_to_cv2(SC)
@@ -214,14 +216,14 @@ def solve_wire_sequence(image, mod_pos):
     color_hist = [0, 0, 0]
     for i in range(4):
         wires_to_cut, color_hist, coords = wire_seq_solver.solve(image, color_hist)
-        for i, cut in enumerate(wires_to_cut):
+        for j, cut in enumerate(wires_to_cut):
             if cut:
-                y, x = coords[i]
+                y, x = coords[j]
                 win_util.click(mod_x + x, mod_y + y)
                 sleep(0.5)
         win_util.click(button_x, button_y)
         if i < 3:
-            sleep(2)
+            sleep(1.8)
         image = convert_to_cv2(screenshot_module()[0])
 
 def solve_complicated_wires(image, mod_pos, side_features):
@@ -274,7 +276,7 @@ def solve_maze(image, mod_pos):
             win_util.click(left_x, left_y)
         elif direction == E:
             win_util.click(right_x, right_y)
-        sleep(0.5)
+        sleep(0.3)
 
 def solve_password(image, char_model, mod_pos):
     mod_x, mod_y = mod_pos
@@ -373,6 +375,9 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
                 solve_needy_discharge(mod_pos, duration)
             elif label == 22: # Solve Knob.
                 solve_needy_knob(cv2_img, mod_pos)
+        except KeyboardInterrupt:
+            handle_module_exception(mod_name, cv2_img)
+            raise KeyboardInterrupt
         except Exception:
             handle_module_exception(mod_name, cv2_img)
         if timestamp is None:
@@ -441,9 +446,12 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                 elif label == 19 and label not in dont_solve: # Morse.
                     solve_morse(cv2_img, mod_pos)
                 solved_modules += 1
+            except KeyboardInterrupt: # Bomb 'sploded.
+                handle_module_exception(mod_name, cv2_img)
+                raise KeyboardInterrupt
             except Exception:
                 handle_module_exception(mod_name, cv2_img)
-            sleep(0.5)
+            sleep(0.1)
             deselect_module()
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
             SW, SH = win_util.get_screen_size()
@@ -452,7 +460,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             win_util.mouse_up(SW // 2, SH // 2, btn="right")
             sleep(0.5)
     if solved_modules == num_modules:
-        log("Phew! We live to defuse another bomb.")
+        log("We did it! We live to defuse another bomb!")
     else:
         log("Some modules could not be disarmed, it seems we are doomed...")
 

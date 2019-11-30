@@ -51,9 +51,12 @@ def solve(img):
     directions = knob_features.get_directions(img)
     dial_orientation = knob_features.get_dial_orientation(img)
     leds = knob_features.get_led_states(img)
+    if leds == [False] * 12:
+        log("Needy Knob is not active, nothing needs doing.", LOG_DEBUG, "Needy Knob")
+        return 0
 
     up_index = directions.index(True)
-    down_index = 4 - up_index if up_index % 2 == 1 else 2 - up_index
+    down_index = (up_index + 2) % 4
     right_index = (up_index + 1) % 4
     left_index = (down_index + 1) % 4
 
@@ -69,7 +72,7 @@ def solve(img):
         log(f"{dirs[i]} is at index '{aligned_dirs.index(i)}' clock-wise.")
 
     log(f"Knob needs to be in the '{dirs[desired_pos]}' position.", LOG_DEBUG, "Needy Knob")
-    log(f"Knob Dial is point at position {dial_orientation}")
-    turns = desired_pos - dial_orientation
+    log(f"Knob Dial is pointing at position {dial_orientation}")
+    turns = desired_pos - dial_orientation + up_index
     log(f"Turn knob {turns} times.", LOG_DEBUG, "Needy Knob")
     return turns

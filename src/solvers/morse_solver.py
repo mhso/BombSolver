@@ -33,7 +33,7 @@ LETTERS = {
     "--.."  : "z"
 }
 
-WORDS = [ # Indexing is done using WORDS.index().
+WORDS = [ # Ordered by frequencies.
     "shell", "halls", "slick", "trick",
     "boxes", "leaks", "strobe", "bistro",
     "flick", "bombs", "break", "brick",
@@ -46,6 +46,19 @@ FREQUENCIES = [
     "3.555", "3.565", "3.572", "3.575",
     "3.582", "3.592", "3.595", "3.600"
 ]
+
+def get_word_from_prefix(prefix):
+    """
+    Returns index of the word that starts with the given prefix,
+    or None if there are zero or more than one of such matches.
+    """
+    matches = 0
+    index = 0
+    for i, word in enumerate(WORDS):
+        if word.startswith(prefix):
+            matches += 1
+            index = i
+    return index if matches == 1 else None
 
 def is_lit(pixel, rgb):
     lit_low = (40, 180, 180)
@@ -71,7 +84,7 @@ def solve(img, screenshot_func):
     word_pause = 2.5 # 194 frames ~ 3.3 seconds
     sleep_duration = 0.05
     duration = 0
-    for _ in range(2): # Run twice to ensure the whole sequence of letters are recorded.
+    for i in range(2): # Run twice to ensure the whole sequence of letters are recorded.
         lit = is_lit(pixel, rgb)
         checkpoint = time()
         letters = ""
@@ -87,16 +100,17 @@ def solve(img, screenshot_func):
                     duration = time() - checkpoint # Record length of gap.
                     checkpoint = time() # Record time of light being lit.
 
-                    if duration >= word_pause:
-                        letter = LETTERS.get(symbols, '')
-                        letters += letter
-                        log("=== END OF WORD ===", LOG_DEBUG, "Morse")
-                        break
                     if duration >= letter_pause:
                         letter = LETTERS.get(symbols, '')
                         log(f"LETTER: {letter}", LOG_DEBUG, "Morse")
                         letters += letter
+                        if i == 1 and get_word_from_prefix(letters) is not None:
+                            break
                         symbols = ""
+                    if duration >= word_pause:
+                        pos_str = "START" if i == 0 else "END"
+                        log(f"=== {pos_str} OF WORD ===", LOG_DEBUG, "Morse")
+                        break
                 else:
                     duration = time() - checkpoint # Record length of flash.
                     checkpoint = time() # Record time of light being unlit.
@@ -106,7 +120,7 @@ def solve(img, screenshot_func):
                     elif duration >= dot_pause:
                         symbols += "."
 
-    log(f"Word: {letters}", LOG_DEBUG, "Morse")
     # Return amount of times to press morse button.
-    presses = WORDS.index(letters)
+    presses = get_word_from_prefix(letters)
+    log(f"Word: {WORDS[presses]}", LOG_DEBUG, "Morse")
     return presses, FREQUENCIES[presses]

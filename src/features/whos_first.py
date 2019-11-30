@@ -30,30 +30,19 @@ def split_labels(img):
     return images, coords
 
 def repair_gaps(img):
-    y = int(img.shape[0] / 2)
+    """
+    Fills out gaps in letters, specifically the letter K,
+    when they appear on screen.
+    """
+    y = int(img.shape[0] / 2) - 2
     last_white = 0
     for x in range(img.shape[1]):
         white = img[y, x] == 255
-        if white and img[y, x-1] == 0 and x - last_white < 3:
-            img[y, x-2:x] = 255
+        if white and img[y, x-1] == 0 and x - last_white < 4:
+            img[y-1:y+1, x-2:x] = 255
         if white:
             last_white = x
     return img
-
-def split_letters(img, thresh_x):
-    white_gap = 0
-    prev_cutoff = 0
-    images = []
-    for x in range(img.shape[1]):
-        white = np.any(img[:, x] == 255)
-        if white:
-            white_gap += 1
-        else:
-            if white_gap > thresh_x:
-                images.append(img[:, prev_cutoff:x])
-                prev_cutoff = x
-            white_gap = 0
-    return images
 
 def get_masked_images(img, x_dist):
     _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -92,11 +81,11 @@ def get_characters(img):
     thresh = get_threshold(screen)
     thresh = repair_gaps(thresh)
     screen_masks = get_masked_images(thresh, 5)
+
     words = [screen_masks]
     masks = []
     if screen_masks == []: # Word on the screen is blank (empty).
-        screen_masks = None
-        words = [screen_masks]
+        words = [None]
     else:
         masks = [m for m in screen_masks]
     label_images, coords = split_labels(img)
