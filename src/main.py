@@ -15,6 +15,7 @@ from features.bomb_duration import get_bomb_duration
 from features.util import convert_to_cv2
 from features.indicator import get_indicator_features
 from features.light_monitor import LightMonitor
+import features.needy_util as needy_features
 import config
 
 # Monitors whether the light has turned off from a seperate thread.
@@ -167,12 +168,8 @@ def release_mouse_at(digit, duration, x, y):
 def solve_wires(image, mod_pos, side_features):
     mod_x, mod_y = mod_pos
     result, coords = wire_solver.solve(image, side_features)
-    if result == -1:
-        log(coords, config.LOG_WARNING)
-        return
     log(f"Cut wire at {result}", config.LOG_DEBUG)
     wire_y, wire_x = coords[result]
-    sleep(0.5)
     win_util.click(mod_x + wire_x, mod_y + wire_y)
 
 def solve_button(image, mod_pos, side_features, character_model, duration):
@@ -313,11 +310,17 @@ def solve_whos_on_first(image, char_model, mod_pos):
 # /========================= NEEDY MODULES =========================\
 
 def solve_needy_vent(image, mod_pos):
+    if not needy_features.is_active(image):
+        log ("Needy Vent is not active.", config.LOG_DEBUG, "Needy Vent")
+        return
     mod_x, mod_y = mod_pos
     button_y, button_x = needy_vent_solver.solve(image)
     win_util.click(button_x + mod_x, button_y + mod_y)
 
-def solve_needy_discharge(mod_pos, time_started):
+def solve_needy_discharge(image, mod_pos, time_started):
+    if not needy_features.is_active(image):
+        log ("Needy Discharge is not active.", config.LOG_DEBUG, "Needy Discharge")
+        return
     mod_x, mod_y = mod_pos
     time_spent = get_time_spent(time_started)
     x_top, y_top = mod_x + 230, mod_y + 92
@@ -370,7 +373,7 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
             if label == 20: # Needy Vent Gas.
                 solve_needy_vent(cv2_img, mod_pos)
             elif label == 21: # Needy Discharge Capacitor.
-                solve_needy_discharge(mod_pos, duration)
+                solve_needy_discharge(cv2_img, mod_pos, duration)
             elif label == 22: # Solve Knob.
                 solve_needy_knob(cv2_img, mod_pos)
         except KeyboardInterrupt:

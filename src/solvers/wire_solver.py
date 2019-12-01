@@ -1,5 +1,5 @@
 from enum import Enum
-from debug import log, LOG_DEBUG
+from debug import log, LOG_DEBUG, LOG_WARNING
 import features.util as features_util
 import config
 
@@ -42,7 +42,8 @@ def solve(img, features):
 
     serial_odd = features.get("last_serial_odd", None)
     if serial_odd is None:
-        return (-1, "Serial number information not provided")
+        log("WARNING: Serial number information not provided", LOG_WARNING, "Wires")
+        raise ValueError # Something went wrong.
 
     if num_wires == 3:
         if color_hist[Colors.Red.value] == 0: # There are no red wires.
@@ -85,4 +86,5 @@ def solve(img, features):
         if color_hist[Colors.Red.value] == 0: # No red wires.
             return get_nth_wire(wire_hist, -1), coords # Cut last wire.
         return get_nth_wire(wire_hist, 3), coords # Cut the fourth wire.
-    return (-1, "Invalid number of wires (invalid number of wires)")
+    log("WARNING: Invalid number of wires.", LOG_WARNING, "Wires")
+    raise ValueError # Something went wrong.
