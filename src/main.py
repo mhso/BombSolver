@@ -319,7 +319,7 @@ def solve_needy_vent(image, mod_pos):
 
 def solve_needy_discharge(image, mod_pos, time_started):
     if not needy_features.is_active(image):
-        log ("Needy Discharge is not active.", config.LOG_DEBUG, "Needy Discharge")
+        log("Needy Discharge is not active.", config.LOG_DEBUG, "Needy Discharge")
         return
     mod_x, mod_y = mod_pos
     time_spent = get_time_spent(time_started)

@@ -98,12 +98,8 @@ def get_characters(img):
 
 def get_word(prediction):
     characters = [classifier.LABELS[x] for x in classifier_util.get_best_prediction(prediction)]
-    if characters[0] == "y" and characters[2] == "u":
-        characters[1] = "o"
-    elif characters[:4] == ["w", "h", "a", "t"] and len(characters) == 5:
-        characters[4] = "?"
-    elif characters[:3] == ["d", "i", "s"] and characters[4:] == ["l", "a", "y"]:
-        characters[3] = "p"
+    if characters[:4] == ["w", "h", "a", "t"] and len(characters) == 5:
+        characters[4] = "?" # Handle special case with question-mark after 'what'.
     return "".join(characters)
 
 def get_words(img, model):

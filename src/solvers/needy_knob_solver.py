@@ -76,7 +76,7 @@ def solve(img):
 
     log(f"Knob needs to be in the '{dirs[desired_pos]}' position.", LOG_DEBUG, "Needy Knob")
     log(f"Knob Dial is pointing at position {dial_orientation}")
-    turns = desired_pos - dial_orientation + up_index
+    turns = (desired_pos - dial_orientation + up_index) % 4
     if turns < 0:
         turns = 0
     log(f"Turn knob {turns} times.", LOG_DEBUG, "Needy Knob")

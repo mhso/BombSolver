@@ -6,7 +6,7 @@ def crop_image(img):
 
 def is_active(img):
     cropped = crop_image(img)
-    h, w = cropped.shape
+    h, w = cropped.shape[:2]
     y = h/2
     step_x = w // 12
     start_x = (w // 10)
