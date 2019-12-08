@@ -2,7 +2,7 @@ from time import sleep
 from threading import Thread, Event
 from _thread import interrupt_main
 from features import util as features_util
-from windows_util import get_screen_size
+from util.windows_util import get_screen_size
 from model.grab_img import screenshot
 from debug import log
 
@@ -16,6 +16,9 @@ class LightMonitor:
         self.pixel = (160, 10)
         self.exploded = False
         self.change_event = Event()
+        self.is_active = False
+
+    def start(self):
         self.is_active = True
         Thread(target=self.monitor).start()
 

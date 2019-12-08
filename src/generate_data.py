@@ -3,10 +3,10 @@ from glob import glob
 from sys import argv
 import os
 from cv2 import imwrite
-import inspect_modules
-import inspect_bomb
+import util.inspect_modules as inspect_modules
+import util.inspect_bomb as inspect_bomb
 from debug import log
-import windows_util as win_util
+import util.windows_util as win_util
 import main
 from features.util import convert_to_cv2
 import model.module_classifier as classifier
@@ -30,15 +30,9 @@ MODEL = (None if not AUTO_LABEL else
          classifier.load_from_file("../resources/trained_models/module_model"))
 SW, SH = win_util.get_screen_size()
 X_COORD = int(SW * 0.55)
-LEVEL_COORDS = {
-    "eight_modules" : int(SH * 0.53),
-    "multi-tasker" : int(SH * 0.35),
-    "the_knob" : int(SH * 0.305),
-    "hardcore" : int(SH * 0.55)
-}
 LEVEL = argv[4] if len(argv) > 4 else "eight_modules"
 
-def restart_level(l_x, l_y):
+def restart_level(level):
     SW, SH = win_util.get_screen_size()
     win_util.click(int(SW * 0.9), int(SH * 0.8), btn="right")
     sleep(1)
@@ -48,7 +42,7 @@ def restart_level(l_x, l_y):
     sleep(2)
     win_util.click(int(SW * 0.52), int(SH * 0.53))
     sleep(0.8)
-    win_util.click(l_x, l_y)
+    inspect_bomb.select_level(level)
     sleep(0.5)
 
 def process_bomb_data(images):
@@ -122,5 +116,5 @@ while INSPECTIONS:
         DATA, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_LABELS)
         process_module_data(DATA, FILTERED_PREDICTIONS)
     if "skip" not in argv or INSPECTIONS > 1:
-        restart_level(X_COORD, LEVEL_COORDS[LEVEL])
+        restart_level(LEVEL)
     INSPECTIONS -= 1

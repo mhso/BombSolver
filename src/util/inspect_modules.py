@@ -1,6 +1,7 @@
 from time import sleep
 import main
-import windows_util as win_util
+from util.inspect_bomb import flip_bomb
+import util.windows_util as win_util
 
 def inspect(labels, labels_to_inspect):
     SW, SH = win_util.get_screen_size()
@@ -19,7 +20,7 @@ def inspect(labels, labels_to_inspect):
             sleep(0.5)
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
             SW, SH = win_util.get_screen_size()
-            main.flip_bomb(SW, SH)
+            flip_bomb(SW, SH)
             sleep(0.75)
             win_util.mouse_up(SW // 2, SH // 2, btn="right")
             sleep(0.5)

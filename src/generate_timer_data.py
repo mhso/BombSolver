@@ -1,7 +1,7 @@
 from glob import glob
 from time import sleep
 from features import bomb_duration
-import windows_util as win_util
+import util.windows_util as win_util
 import cv2
 
 def sleep_until_start():

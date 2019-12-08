@@ -2,11 +2,11 @@ from time import sleep, time
 from sys import argv
 from math import floor
 from debug import log, handle_module_exception
-import windows_util as win_util
+import util.windows_util as win_util
+import util.inspect_bomb as inspect_bomb
 from model import (module_classifier, character_classifier, symbol_classifier,
                    classifier_util, dataset_util)
 from model.grab_img import screenshot
-from inspect_bomb import inspect_bomb, partition_sides, flip_bomb
 from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
                      wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
                      maze_solver, password_solver, morse_solver, needy_vent_solver, needy_knob_solver)
@@ -20,6 +20,7 @@ import config
 
 # Monitors whether the light has turned off from a seperate thread.
 LIGHT_MONITOR = None
+SPEEDRUN_TIMESTAMP = 0
 
 def sleep_until_start():
     """
@@ -357,7 +358,7 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
     timestamp = None
     for index in needy_indices:
         if (index > 5) ^ (prev_index > 5): # Flip the bomb, if needed.
-            flip_bomb(SW, SH)
+            inspect_bomb.flip_bomb(SW, SH)
             sleep(0.75)
             win_util.mouse_up(SW // 2, SH // 2, btn="right")
             sleep(0.5)
@@ -389,7 +390,7 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
         prev_index = index
     # Flip the bomb back to it's original state, if needed.
     if (curr_module > 5) ^ (prev_index > 5):
-        flip_bomb(SW, SH)
+        inspect_bomb.flip_bomb(SW, SH)
         sleep(0.75)
         win_util.mouse_up(SW // 2, SH // 2, btn="right")
         sleep(0.5)
@@ -456,7 +457,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             deselect_module()
         if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
             SW, SH = win_util.get_screen_size()
-            flip_bomb(SW, SH)
+            inspect_bomb.flip_bomb(SW, SH)
             sleep(0.75)
             win_util.mouse_up(SW // 2, SH // 2, btn="right")
             sleep(0.5)
@@ -464,6 +465,49 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
         log("We did it! We live to defuse another bomb!")
     else:
         log("Some modules could not be disarmed, it seems we are doomed...")
+
+def run_level(module_model, char_model, symbol_model):
+    minutes = 8
+    seconds = 0
+
+    if "skip" not in argv:
+        # Extract bomb duration from description of bomb in main menu.
+        minutes, seconds = get_bomb_duration(CHAR_MODEL)
+        log(f"Bomb duration: {minutes} minute(s) & {seconds} seconds.")
+
+        start_level()
+        if "speedrun" in argv:
+            SPEEDRUN_TIMESTAMP = time()
+
+        log("Waiting for level to start...")
+        await_level_start() # Wait for level to load and bomb timer to start.
+
+    LIGHT_MONITOR.start()
+
+    time_started = time() # Time started is used for solving the button module.
+
+    log("Inspecting bomb...")
+
+    images = inspect_bomb.inspect_bomb() # Capture images of all sides of the bomb.
+    side_partitions = inspect_bomb.partition_sides(images) # Split images into modules/side of bomb.
+    # Identify features from the side of the bomb (indicators, batteries, serial number, etc.).
+    predictions = identify_side_features(side_partitions, module_model)
+
+    # Extract aforementioned features (read serial number, count num. of batteries, etc.).
+    side_features = extract_side_features(side_partitions[1:], predictions[12:], char_model)
+
+    log(f"Side features: {side_features}", verbose=config.LOG_DEBUG)
+    log(f"Modules: {[module_classifier.LABELS[x] for x in predictions[:12]]}", config.LOG_DEBUG)
+
+    try:
+        # Solve all modules. Back of the bomb first, from left to right, top to bottom.
+        solve_modules(predictions[:12], side_features, char_model,
+                      symbol_model, (time_started, minutes, seconds))
+    except KeyboardInterrupt: # Catch SIGINT from LightMonitor (meaning the bomb exploded).
+        log("Exiting...")
+        exit(0)
+
+    LIGHT_MONITOR.shut_down()
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
@@ -481,42 +525,29 @@ if __name__ == "__main__":
     log("Press S when a level has been selected.")
     sleep_until_start() # Wait for level selection.
 
-    MINUTES = 8
-    SECONDS = 0
-
-    if "skip" not in argv:
-        # Extract bomb duration from description of bomb in main menu.
-        MINUTES, SECONDS = get_bomb_duration(CHAR_MODEL)
-        log(f"Bomb duration: {MINUTES} minute(s) & {SECONDS} seconds.")
-
-        start_level()
-
-        log("Waiting for level to start...")
-        await_level_start() # Wait for level to load and bomb timer to start.
-
-    TIME_STARTED = time() # Time started is used for solving the button module.
-
-    log("Inspecting bomb...")
-
-    IMAGES = inspect_bomb() # Capture images of all sides of the bomb.
-    SIDE_PARTITIONS = partition_sides(IMAGES) # Split images into modules/side of bomb.
-    # Identify features from the side of the bomb (indicators, batteries, serial number, etc.).
-    PREDICTIONS = identify_side_features(SIDE_PARTITIONS, MODEL)
-
-    # Extract aforementioned features (read serial number, count num. of batteries, etc.).
-    SIDE_FEATURES = extract_side_features(SIDE_PARTITIONS[1:], PREDICTIONS[12:], CHAR_MODEL)
-
-    log(f"Side features: {SIDE_FEATURES}", verbose=config.LOG_DEBUG)
-    log(f"Modules: {[module_classifier.LABELS[x] for x in PREDICTIONS[:12]]}", config.LOG_DEBUG)
-
     LIGHT_MONITOR = LightMonitor() # Track when the light in the room turns off.
 
-    try:
-        # Solve all modules. Back of the bomb first, from left to right, top to bottom.
-        solve_modules(PREDICTIONS[:12], SIDE_FEATURES, CHAR_MODEL,
-                      SYMBOL_MODEL, (TIME_STARTED, MINUTES, SECONDS))
-    except KeyboardInterrupt: # Catch SIGINT from LightMonitor (meaning the bomb exploded).
-        log("Exiting...")
-        exit(0)
+    LEVELS = [None]
+    if "speedrun" in argv:
+        log("Running in 'speedrun' mode, TAS engaged!")
+        LEVELS_PER_PAGE = [5, 13, 20, 26, 32]
+        LEVELS = inspect_bomb.LEVEL_COORDS
 
-    LIGHT_MONITOR.shut_down()
+    for i, level in enumerate(LEVELS):
+        speedrunning = level is not None
+        if speedrunning:
+            if i in LEVELS_PER_PAGE:
+                inspect_bomb.next_level_page()
+            log(f"Starting level '{level}'.")
+            inspect_bomb.select_level(level)
+            sleep(0.5)
+        run_level(MODEL, CHAR_MODEL, SYMBOL_MODEL)
+        if speedrunning: # Select next level.
+            duration = time() - SPEEDRUN_TIMESTAMP
+            log(f"Split: {duration:.3f} seconds.", module="Speedrun")
+            log(f"Completed: {i+1}/len(LEVELS) seconds.", module="Speedrun")
+            sleep(11)
+            inspect_bomb.continue_button()
+            sleep(1.75)
+            inspect_bomb.select_bombs_menu()
+            sleep(1)

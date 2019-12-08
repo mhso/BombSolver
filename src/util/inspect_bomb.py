@@ -1,7 +1,47 @@
 from time import sleep
-from debug import log
-import windows_util as win_util
+import util.windows_util as win_util
 from model.grab_img import screenshot
+
+SW, SH = win_util.get_screen_size()
+LEVEL_COORDS = {
+    "first_bomb" : int(SH * 0.35),
+    "old-new" : int(SH * 0.47),
+    "double_your_money" : int(SH * 0.53),
+    "step_up" : int(SH * 0.58),
+    "pick_up_pace_1" : int(SH * 0.62),
+    "hidden_message" : int(SH * 0.26),
+    "somethings_different" : int(SH * 0.30),
+    "one_giant_leap" : int(SH * 0.35),
+    "fair_game" : int(SH * 0.39),
+    "pick_up_pace_2" : int(SH * 0.44),
+    "no_room_for_error" : int(SH * 0.48),
+    "eight_modules" : int(SH * 0.53),
+    "small_wrinkle" : int(SH * 0.64),
+    "multi-tasker" : int(SH * 0.35),
+    "the_knob" : int(SH * 0.305),
+    "hardcore" : int(SH * 0.55)
+}
+
+def next_level_page():
+    sw, sh = win_util.get_screen_size()
+    win_util.click(int(sw * 0.65), int(sh * 0.70))
+
+def select_level(level):
+    win_util.click(int(SW * 0.55), LEVEL_COORDS[level])
+
+def continue_button():
+    sw, sh = win_util.get_screen_size()
+    x = sw // 2
+    y = int(sh * 0.65)
+    win_util.click(x, y)
+    sleep(1)
+    win_util.click(x, y)
+
+def select_bombs_menu():
+    sw, sh = win_util.get_screen_size()
+    x = sw // 2
+    y = int(sh * 0.56)
+    win_util.click(x, y)
 
 def inspect_side(mx, my, sx, sy, sw, sh):
     win_util.mouse_move(mx, my)
@@ -23,9 +63,9 @@ def flip_bomb(SW, SH):
     sleep(0.5)
 
 def inspect_bomb():
-    SW, SH = win_util.get_screen_size()
-    mid_x = SW // 2
-    mid_y = SH // 2
+    sw, sh = win_util.get_screen_size()
+    mid_x = sw // 2
+    mid_y = sh // 2
     win_util.click(mid_x, mid_y + (mid_y // 8))
     sleep(0.5)
     # Inspect front of bomb.
@@ -35,17 +75,17 @@ def inspect_bomb():
     win_util.mouse_down(mid_x, mid_y, btn="right")
     sleep(0.2)
     # Inspect right side.
-    right_img = inspect_side(SW - int(SW / 2.74), mid_y + int(mid_y / 8), 755, 60, 480, 900)
+    right_img = inspect_side(sw - int(sw / 2.74), mid_y + int(mid_y / 8), 755, 60, 480, 900)
     # Inspect left side.
-    left_img = inspect_side(int(SW / 2.76), mid_y + int(mid_y / 8), 755, 60, 480, 900)
+    left_img = inspect_side(int(sw / 2.76), mid_y + int(mid_y / 8), 755, 60, 480, 900)
     # Inspect top side.
-    top_img = inspect_side(int(SW / 2.75), SH, 720, 0, 480, SH)
+    top_img = inspect_side(int(sw / 2.75), sh, 720, 0, 480, sh)
     # Inspect bottom side.
-    bottom_img = inspect_side(int(SW / 2.75), 0, 720, 0, 480, SH)
+    bottom_img = inspect_side(int(sw / 2.75), 0, 720, 0, 480, sh)
     # Inspect back of bomb.
     win_util.mouse_up(mid_x, mid_y, btn="right")
     sleep(0.5)
-    flip_bomb(SW, SH)
+    flip_bomb(sw, sh)
     back_img = screenshot(460, 220, 1000, 640)
     sleep(0.4)
     win_util.mouse_up(mid_x, mid_y, btn="right")
