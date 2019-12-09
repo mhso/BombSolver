@@ -1,6 +1,7 @@
 from time import sleep, time
 from sys import argv
 from math import floor
+from numpy import array
 from debug import log, handle_module_exception
 import util.windows_util as win_util
 import util.inspect_bomb as inspect_bomb
@@ -17,10 +18,11 @@ from features.indicator import get_indicator_features
 from features.light_monitor import LightMonitor
 import features.needy_util as needy_features
 import config
+from view.overlay import GUIOverlay
 
 # Monitors whether the light has turned off from a seperate thread.
 LIGHT_MONITOR = None
-SPEEDRUN_TIMESTAMP = 0
+GUI_OVERLAY = None
 
 def sleep_until_start():
     """
@@ -45,15 +47,13 @@ def await_level_start():
     sleep(16.8)
 
 def identify_side_features(sides, model):
-    predictions = [0] * 32
-    i = 0
+    flattened = []
     for side in sides:
         for img in side:
             converted = dataset_util.reshape(convert_to_cv2(img), config.MODULE_INPUT_DIM[1:])
-            pred = module_classifier.predict(model, converted)
-            predict_label = classifier_util.get_best_prediction(pred)[0]
-            predictions[i] = predict_label
-            i += 1
+            flattened.append(converted)
+    preds = module_classifier.predict(model, array(flattened))
+    predictions = classifier_util.get_best_prediction(preds)
     return predictions
 
 def print_features(features):
@@ -128,7 +128,7 @@ def extract_side_features(sides, labels, character_model):
 
 # /================= MODULE SELECTION / SCREENSHOTTING =================\
 
-def select_module(module):
+def get_module_coords(module):
     SW, SH = win_util.get_screen_size()
     start_x = SW * 0.35
     start_y = SH * 0.35
@@ -136,6 +136,10 @@ def select_module(module):
     offset_y = 300
     x = int(start_x + ((module % 3) * offset_x))
     y = int(start_y + ((module // 3) * offset_y))
+    return x, y
+
+def select_module(module):
+    x, y = get_module_coords(module)
     win_util.click(x, y)
     sleep(1)
 
@@ -154,9 +158,9 @@ def screenshot_module():
 # /========================= MODULE SOLVING =========================\
 
 def release_mouse_at(digit, duration, x, y):
-    time_started, minutes, seconds = duration
+    time_started, mins, secs = duration
     while True:
-        remaining = get_time_remaining(time_started, minutes, seconds)
+        remaining = get_time_remaining(time_started, mins, secs)
         sec_str = str(remaining % 60)
         if len(sec_str) == 1:
             sec_str = "0" + sec_str
@@ -229,7 +233,7 @@ def solve_complicated_wires(image, mod_pos, side_features):
         if cut:
             y, x = coords[i]
             win_util.click(mod_x + x, mod_y + y)
-            sleep(0.5)
+            sleep(0.3)
 
 def solve_morse(image, mod_pos):
     mod_x, mod_y = mod_pos
@@ -466,22 +470,11 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
     else:
         log("Some modules could not be disarmed, it seems we are doomed...")
 
+def add_overlay_properties(key, value):
+    if "visualize" in argv:
+        GUI_OVERLAY.add_status(key, value)
+
 def run_level(module_model, char_model, symbol_model):
-    minutes = 8
-    seconds = 0
-
-    if "skip" not in argv:
-        # Extract bomb duration from description of bomb in main menu.
-        minutes, seconds = get_bomb_duration(CHAR_MODEL)
-        log(f"Bomb duration: {minutes} minute(s) & {seconds} seconds.")
-
-        start_level()
-        if "speedrun" in argv:
-            SPEEDRUN_TIMESTAMP = time()
-
-        log("Waiting for level to start...")
-        await_level_start() # Wait for level to load and bomb timer to start.
-
     LIGHT_MONITOR.start()
 
     time_started = time() # Time started is used for solving the button module.
@@ -492,6 +485,10 @@ def run_level(module_model, char_model, symbol_model):
     side_partitions = inspect_bomb.partition_sides(images) # Split images into modules/side of bomb.
     # Identify features from the side of the bomb (indicators, batteries, serial number, etc.).
     predictions = identify_side_features(side_partitions, module_model)
+
+    add_overlay_properties("debug_bg_img", convert_to_cv2(screenshot(0, 0, 1920, 1080)))
+    add_overlay_properties("module_positions", [get_module_coords(x) for x in range(6)])
+    add_overlay_properties("module_names", [module_classifier.LABELS[x] for x in predictions[:12]])
 
     # Extract aforementioned features (read serial number, count num. of batteries, etc.).
     side_features = extract_side_features(side_partitions[1:], predictions[12:], char_model)
@@ -508,6 +505,7 @@ def run_level(module_model, char_model, symbol_model):
         exit(0)
 
     LIGHT_MONITOR.shut_down()
+    GUI_OVERLAY.shut_down()
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
@@ -526,6 +524,8 @@ if __name__ == "__main__":
     sleep_until_start() # Wait for level selection.
 
     LIGHT_MONITOR = LightMonitor() # Track when the light in the room turns off.
+    if "visualize" in argv:
+        GUI_OVERLAY = GUIOverlay()
 
     LEVELS = [None]
     if "speedrun" in argv:
@@ -541,10 +541,26 @@ if __name__ == "__main__":
             log(f"Starting level '{level}'.")
             inspect_bomb.select_level(level)
             sleep(0.5)
+
+        seconds = 0
+
+        if "skip" not in argv:
+            # Extract bomb duration from description of bomb in main menu.
+            minutes, seconds = get_bomb_duration(CHAR_MODEL)
+            log(f"Bomb timer: _:{seconds}.")
+
+            start_level()
+            if "speedrun" in argv:
+                SPEEDRUN_TIMESTAMP = time()
+
+            log("Waiting for level to start...")
+            await_level_start() # Wait for level to load and bomb timer to start.
+
         run_level(MODEL, CHAR_MODEL, SYMBOL_MODEL)
+
         if speedrunning: # Select next level.
-            duration = time() - SPEEDRUN_TIMESTAMP
-            log(f"Split: {duration:.3f} seconds.", module="Speedrun")
+            split = time() - SPEEDRUN_TIMESTAMP
+            log(f"Split: {split:.3f} seconds.", module="Speedrun")
             log(f"Completed: {i+1}/len(LEVELS) seconds.", module="Speedrun")
             sleep(11)
             inspect_bomb.continue_button()

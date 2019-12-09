@@ -1,11 +1,8 @@
-import cv2
-import features.needy_util
-from win32gui import GetCursorPos
-from main import sleep_until_start
+import view.overlay as overlay
+import main
+from model.module_classifier import LABELS
 
-img = cv2.imread("../resources/misc/error_imgs/16.png", cv2.IMREAD_COLOR)
-#img = cv2.imread("../resources/training_images/needy_discharge/000.png", cv2.IMREAD_COLOR)
-print(features.needy_util.is_active(img))
+ree = overlay.GUIOverlay()
 
-sleep_until_start()
-print(GetCursorPos())
+ree.add_status("module_positions", [main.get_module_coords(x) for x in range(6)])
+ree.add_status("module_names", [LABELS[10+x] for x in range(6)])
