@@ -424,6 +424,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
         if 8 < label < 20:
             select_module(mod_index)
             SC, x, y = screenshot_module()
+            add_overlay_properties("module_selected", (x, y, mod_index))
             mod_pos = (x, y)
             cv2_img = convert_to_cv2(SC)
             mod_name = module_classifier.LABELS[label]
@@ -546,7 +547,7 @@ if __name__ == "__main__":
 
         if "skip" not in argv:
             # Extract bomb duration from description of bomb in main menu.
-            minutes, seconds = get_bomb_duration(CHAR_MODEL)
+            minutes, seconds = get_bomb_duration(CHAR_MODEL) # TODO: Run this in parallel.
             log(f"Bomb timer: _:{seconds}.")
 
             start_level()
