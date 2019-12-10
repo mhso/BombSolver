@@ -70,10 +70,10 @@ class GUIOverlay:
             elif prop == "module_selected":
                 self.draw_module_selected(value)
             elif prop == "debug_bg_img":
-                self.bg_img = value
+                self.bg_img = np.copy(value)
 
     def erase_properties(self, erased_props):
-        self.create_blank_bg_image()
+        self.create_bg_image()
         self.changed_properties = set(self.properties.keys()) - set(erased_props)
         print(self.changed_properties)
 
@@ -83,16 +83,19 @@ class GUIOverlay:
         self.changed_properties = []
         self.lock.release()
 
-    def create_blank_bg_image(self):
+    def create_bg_image(self):
         sw, sh = win_util.get_screen_size()
         padding = 20
-        self.bg_img = np.zeros((sh-padding, sw-padding, 3), dtype="uint8")
+        if "debug_bg_img" in self.properties:
+            self.bg_img = np.copy(self.properties["debug_bg_img"])
+        else:
+            self.bg_img = np.zeros((sh-padding, sw-padding, 3), dtype="uint8")
 
     def create_window(self):
         sw, sh = win_util.get_screen_size()
         fps = 10
 
-        self.create_blank_bg_image()
+        self.create_bg_image()
 
         path = "../../resources/misc/recorded_runs/"
         num_files = len(glob(path+".mov"))
