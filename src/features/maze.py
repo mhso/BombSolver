@@ -37,7 +37,7 @@ def get_start_and_end(img):
     return start, end
 
 def get_contour_positions(img):
-    _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
     contours = features_util.combine_contours(contours, 3)
     bboxes = [features_util.largest_bounding_rect(c) for c in contours]
 

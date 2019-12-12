@@ -1,4 +1,5 @@
 from glob import glob
+from time import time
 from threading import Thread, Lock
 import numpy as np
 import cv2
@@ -13,17 +14,30 @@ class GUIOverlay:
         self.lock = Lock()
         self.is_active = True
         self.window_name = "BombSolver"
+
+    def start(self):
         Thread(target=self.create_window).start()
 
     def draw_speedrun_splits(self, splits):
         pass
 
-    def draw_speedrun_time(self, time):
-        pass
+    def draw_speedrun_time(self, s_time):
+        sw, _ = win_util.get_screen_size()
+        #self.erase_properties("speedrun_time")
+        mins = s_time // 60
+        as_str = str(s_time % 60)
+        if s_time % 60 < 10:
+            as_str = "0" + as_str
+        mins_str = str(mins)
+        if mins < 10:
+            mins_str = "0" + mins_str
+        as_str = mins_str + ":" + as_str
+        cv2.putText(self.bg_img, as_str, (sw-180, 50),
+                    cv2.FONT_HERSHEY_PLAIN, 2.8, (255, 255, 255))
 
     def draw_modules(self, positions, names):
         offset = 150
-        self.erase_properties(["module_selected", "module_names"])
+        #self.erase_properties("module_selected", "module_names")
         for ((x, y), name) in zip(positions, names):
             cv2.rectangle(self.bg_img, (x-offset, y-offset),
                           (x+offset, y+offset+10), (0, 0, 255), 5)
@@ -35,7 +49,7 @@ class GUIOverlay:
     def draw_module_selected(self, module):
         size = 300
         x, y, index = module
-        self.erase_properties(["module_positions", "module_names"])
+        #self.erase_properties("module_positions", "module_names")
         for i in range(6):
             offset_x = (i % 3) - (index % 3)
             offset_y = 0
@@ -72,13 +86,13 @@ class GUIOverlay:
             elif prop == "debug_bg_img":
                 self.bg_img = np.copy(value)
 
-    def erase_properties(self, erased_props):
+    def erase_properties(self, *erased_props):
         self.create_bg_image()
         self.changed_properties = set(self.properties.keys()) - set(erased_props)
-        print(self.changed_properties)
 
     def draw_changed_properties(self):
         self.lock.acquire(True)
+        self.erase_properties(*self.changed_properties)
         self.draw_properties(self.changed_properties)
         self.changed_properties = []
         self.lock.release()
@@ -103,6 +117,8 @@ class GUIOverlay:
 
         cv2.namedWindow(self.window_name)
         cv2.moveWindow(self.window_name, sw-15, 0)
+        time_started = self.properties.get("speedrun_time")
+        timestamp = int(time() - time_started)
 
         while self.is_active:
             # if self.record:
@@ -110,6 +126,11 @@ class GUIOverlay:
             #     if not retval:
             #         break
 
+            if time_started is not None:
+                new_time = int(time() - time_started)
+                if new_time > timestamp:
+                    timestamp = new_time
+                    self.add_status("speedrun_time", timestamp)
             self.draw_changed_properties()
 
             cv2.imshow(self.window_name, self.bg_img)

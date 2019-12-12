@@ -12,7 +12,7 @@ from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
                      wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
                      maze_solver, password_solver, morse_solver, needy_vent_solver, needy_knob_solver)
 from features.serial_number import get_serial_number
-from features.bomb_duration import get_bomb_duration
+from features.bomb_details import get_bomb_details
 from features.util import convert_to_cv2
 from features.indicator import get_indicator_features
 from features.light_monitor import LightMonitor
@@ -44,7 +44,7 @@ def await_level_start():
     """
     Sleep until the given level has started (i.e. timer on bomb has started).
     """
-    sleep(16.8)
+    sleep(16.7)
 
 def identify_side_features(sides, model):
     flattened = []
@@ -475,38 +475,40 @@ def add_overlay_properties(key, value):
     if "visualize" in argv:
         GUI_OVERLAY.add_status(key, value)
 
-def run_level(module_model, char_model, symbol_model):
+def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modules):
     LIGHT_MONITOR.start()
 
     time_started = time() # Time started is used for solving the button module.
 
     log("Inspecting bomb...")
 
-    images = inspect_bomb.inspect_bomb() # Capture images of all sides of the bomb.
+    images = inspect_bomb.inspect_bomb(num_modules) # Capture images of all sides of the bomb.
     side_partitions = inspect_bomb.partition_sides(images) # Split images into modules/side of bomb.
     # Identify features from the side of the bomb (indicators, batteries, serial number, etc.).
     predictions = identify_side_features(side_partitions, module_model)
 
+    modules = 12 if num_modules > 5 else 6
+
     add_overlay_properties("debug_bg_img", convert_to_cv2(screenshot(0, 0, 1920, 1080)))
     add_overlay_properties("module_positions", [get_module_coords(x) for x in range(6)])
-    add_overlay_properties("module_names", [module_classifier.LABELS[x] for x in predictions[:12]])
+    add_overlay_properties("module_names", [module_classifier.LABELS[x]
+                                            for x in predictions[:modules]])
 
     # Extract aforementioned features (read serial number, count num. of batteries, etc.).
-    side_features = extract_side_features(side_partitions[1:], predictions[12:], char_model)
+    side_features = extract_side_features(side_partitions[1:], predictions[modules:], char_model)
 
     log(f"Side features: {side_features}", verbose=config.LOG_DEBUG)
-    log(f"Modules: {[module_classifier.LABELS[x] for x in predictions[:12]]}", config.LOG_DEBUG)
+    log(f"Modules: {[module_classifier.LABELS[x] for x in predictions[:modules]]}", config.LOG_DEBUG)
 
     try:
         # Solve all modules. Back of the bomb first, from left to right, top to bottom.
-        solve_modules(predictions[:12], side_features, char_model,
+        solve_modules(predictions[:modules], side_features, char_model,
                       symbol_model, (time_started, minutes, seconds))
     except KeyboardInterrupt: # Catch SIGINT from LightMonitor (meaning the bomb exploded).
         log("Exiting...")
         exit(0)
 
     LIGHT_MONITOR.shut_down()
-    GUI_OVERLAY.shut_down()
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
@@ -525,10 +527,12 @@ if __name__ == "__main__":
     sleep_until_start() # Wait for level selection.
 
     LIGHT_MONITOR = LightMonitor() # Track when the light in the room turns off.
+
     if "visualize" in argv:
         GUI_OVERLAY = GUIOverlay()
 
     LEVELS = [None]
+    SPLITS = []
     if "speedrun" in argv:
         log("Running in 'speedrun' mode, TAS engaged!")
         LEVELS_PER_PAGE = [5, 13, 20, 26, 32]
@@ -543,28 +547,39 @@ if __name__ == "__main__":
             inspect_bomb.select_level(level)
             sleep(0.5)
 
-        seconds = 0
+        SECONDS = 0
+        MINUTES = 5
 
         if "skip" not in argv:
             # Extract bomb duration from description of bomb in main menu.
-            minutes, seconds = get_bomb_duration(CHAR_MODEL) # TODO: Run this in parallel.
-            log(f"Bomb timer: _:{seconds}.")
+            holder = []
+            get_bomb_details(CHAR_MODEL, holder) # This method is run in parallel.
 
             start_level()
             if "speedrun" in argv:
                 SPEEDRUN_TIMESTAMP = time()
+                add_overlay_properties("speedrun_time", SPEEDRUN_TIMESTAMP)
+            if "visualize" in argv:
+                GUI_OVERLAY.start()
 
             log("Waiting for level to start...")
             await_level_start() # Wait for level to load and bomb timer to start.
+            MINUTES, SECONDS = holder[0]
+            NUM_MODULES = holder[1]
+            log(f"Bomb timer: _:{SECONDS}.")
+            log(f"Number of modules: {NUM_MODULES}.")
 
-        run_level(MODEL, CHAR_MODEL, SYMBOL_MODEL)
+        run_level(MODEL, CHAR_MODEL, SYMBOL_MODEL, MINUTES, SECONDS, NUM_MODULES)
 
         if speedrunning: # Select next level.
-            split = time() - SPEEDRUN_TIMESTAMP
-            log(f"Split: {split:.3f} seconds.", module="Speedrun")
-            log(f"Completed: {i+1}/len(LEVELS) seconds.", module="Speedrun")
+            SPLITS.append(time() - SPEEDRUN_TIMESTAMP)
+            add_overlay_properties("speedruns_splits", SPLITS)
+            log(f"Split: {SPLITS[-1]:.3f} seconds.", module="Speedrun")
+            log(f"Completed: {i+1}/{len(LEVELS)} levels.", module="Speedrun")
             sleep(11)
             inspect_bomb.continue_button()
             sleep(1.75)
             inspect_bomb.select_bombs_menu()
             sleep(1)
+
+    GUI_OVERLAY.shut_down()

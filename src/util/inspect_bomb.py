@@ -62,7 +62,7 @@ def flip_bomb(SW, SH):
     win_util.mouse_move(SW - int(SW / 4.4), mid_y + (mid_y // 9))
     sleep(0.5)
 
-def inspect_bomb():
+def inspect_bomb(num_modules=None):
     sw, sh = win_util.get_screen_size()
     mid_x = sw // 2
     mid_y = sh // 2
@@ -85,11 +85,19 @@ def inspect_bomb():
     # Inspect back of bomb.
     win_util.mouse_up(mid_x, mid_y, btn="right")
     sleep(0.5)
-    flip_bomb(sw, sh)
-    back_img = screenshot(460, 220, 1000, 640)
-    sleep(0.4)
-    win_util.mouse_up(mid_x, mid_y, btn="right")
-    return (back_img, front_img, left_img, right_img, top_img, bottom_img)
+    return_tupl = (front_img, left_img, right_img, top_img, bottom_img)
+    if num_modules is None or num_modules > 5:
+        flip_bomb(sw, sh)
+        back_img = screenshot(460, 220, 1000, 640)
+        sleep(0.4)
+        win_util.mouse_up(mid_x, mid_y, btn="right")
+        return_tupl = (back_img,) + return_tupl
+    else:
+        win_util.click(200, 200, btn="right")
+        sleep(0.4)
+        win_util.click(mid_x, mid_y + (mid_y // 8))
+        sleep(0.2)
+    return return_tupl
 
 def partition_main_sides(images):
     side_partitions = []
@@ -134,7 +142,8 @@ def partition_long_sides(images):
     return side_partitions
 
 def partition_sides(images):
-    main_sides = partition_main_sides(images[0:2])
-    short_sides = partition_short_sides(images[2:4])
-    long_sides = partition_long_sides(images[4:6])
+    faces = len(images)-4
+    main_sides = partition_main_sides(images[:faces])
+    short_sides = partition_short_sides(images[faces:faces+2])
+    long_sides = partition_long_sides(images[faces+2:])
     return (main_sides, short_sides, long_sides)

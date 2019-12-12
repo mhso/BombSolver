@@ -1,4 +1,4 @@
-import math
+from threading import Thread
 import numpy as np
 import cv2
 import config
@@ -33,14 +33,10 @@ def largest_bounding_rect(contours):
             max_y = y+h
     return (min_x, min_y, max_x, max_y)
 
-def get_characters():
-    SW, SH = win_util.get_screen_size()
-    sc = screenshot(int(SW * 0.47), int(SH * 0.54), 80, 38)
-    img = cv2.cvtColor(np.array(sc), cv2.COLOR_RGB2BGR)
-    thresh = get_threshold(img)
-    _, contours, _ = cv2.findContours(thresh, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)
+def get_masked_images(image):
+    contours = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)[1]
     contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c)))
-    mask = np.zeros(thresh.shape[:2], dtype="uint8")
+    mask = np.zeros(image.shape[:2], dtype="uint8")
     masks = []
     curr_contours = []
     sub_mask = mask.copy()
@@ -65,6 +61,25 @@ def get_characters():
             filtered_masks.append(mask)
     return filtered_masks
 
+def get_duration_characters():
+    SW, SH = win_util.get_screen_size()
+    sc = screenshot(int(SW * 0.47), int(SH * 0.54), 80, 38)
+    img = cv2.cvtColor(np.array(sc), cv2.COLOR_RGB2BGR)
+    thresh = get_threshold(img)
+    return get_masked_images(thresh)
+
+def get_module_characters():
+    SW, SH = win_util.get_screen_size()
+    sc = screenshot(int(SW * 0.524), int(SH * 0.547), 36, 25)
+    img = cv2.cvtColor(np.array(sc), cv2.COLOR_RGB2BGR)
+    thresh = get_threshold(img)
+    masks = get_masked_images(thresh)
+    if len(masks) == 1 and masks[0].shape[1] > 20:
+        mask1 = masks[0][:, :masks[0].shape[1]//2]
+        mask2 = masks[0][:, masks[0].shape[1]//2:]
+        masks = [mask1, mask2]
+    return masks
+
 def format_time(prediction):
     result = [5, 0, 0]
     if prediction[0] == "b":
@@ -75,11 +90,19 @@ def format_time(prediction):
         result[2] = 5
     return (int(result[0]), int(str(result[1]) + str(result[2])))
 
-def get_bomb_duration(model):
-    masks = get_characters()
-    if len(masks) != 3:
-        log(f"WARNING: Bomb duration string length != 3 (len={len(masks)}).", config.LOG_WARNING)
+def get_details_async(model, holder):
+    duration_masks = get_duration_characters()
+    if len(duration_masks) != 3:
+        log(f"WARNING: Bomb duration string length != 3 (len={len(get_duration_characters)}).",
+            config.LOG_WARNING)
+    module_masks = get_module_characters()
+    masks = duration_masks + module_masks
     masks = np.array([dataset_util.reshape(mask, config.CHAR_INPUT_DIM[1:]) for mask in masks])
     prediction = classifier.predict(model, masks)
     best_pred = classifier_util.get_best_prediction(prediction)
-    return format_time([classifier.LABELS[p] for p in best_pred])
+    labels = [classifier.LABELS[p] for p in best_pred]
+    holder.append(format_time(labels[:3]))
+    holder.append(int("".join(labels[3:])))
+
+def get_bomb_details(model, storing_list):
+    Thread(target=get_details_async, args=(model, storing_list)).start()

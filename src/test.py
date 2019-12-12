@@ -1,8 +1,6 @@
-import view.overlay as overlay
+import util.inspect_bomb as inspect_bomb
 import main
-from model.module_classifier import LABELS
 
-ree = overlay.GUIOverlay()
+main.sleep_until_start()
 
-ree.add_status("module_positions", [main.get_module_coords(x) for x in range(6)])
-ree.add_status("module_names", [LABELS[10+x] for x in range(6)])
+inspect_bomb.inspect_bomb(3)

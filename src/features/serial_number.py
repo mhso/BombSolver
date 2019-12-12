@@ -60,7 +60,7 @@ def get_segmented_image(img):
 
     thresh = cv2.threshold(copy, 50, 255, cv2.THRESH_BINARY_INV)[1]
 
-    _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS)
+    contours = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS)[1]
 
     return copy, contours, alignment
 

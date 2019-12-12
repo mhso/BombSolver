@@ -45,7 +45,7 @@ def get_segmented_image(image, color):
     cy_min, cx_min, cy_max, cx_max = 152, 48, 190, 200
     image = image[cy_min:cy_max, cx_min:cx_max, :]
     thresh = get_threshold(image, color)
-    _, contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
 
     return thresh, contours
 

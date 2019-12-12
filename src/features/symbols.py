@@ -33,7 +33,7 @@ def crop_to_symbol(img):
     return img[min_y:max_y, min_x:max_x]
 
 def segment_image(img):
-    _, contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
     min_y = 10000
     min_cont = -1
     for i, cont in enumerate(contours):
