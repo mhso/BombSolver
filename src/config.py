@@ -2,6 +2,7 @@
 VERBOSITY = 2
 LOG_WARNING = 1
 LOG_DEBUG = 2
+LOG_OVERLAY = 3
 
 # Neural network options.
 MODULE_INPUT_DIM = (3, 64, 64)

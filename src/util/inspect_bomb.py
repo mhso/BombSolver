@@ -96,7 +96,7 @@ def inspect_bomb(num_modules=None):
         win_util.click(200, 200, btn="right")
         sleep(0.4)
         win_util.click(mid_x, mid_y + (mid_y // 8))
-        sleep(0.2)
+        sleep(0.5)
     return return_tupl
 
 def partition_main_sides(images):

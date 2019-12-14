@@ -2,6 +2,7 @@ from time import sleep, time
 from sys import argv
 from math import floor
 from numpy import array
+from view.overlay import GUIOverlay
 from debug import log, handle_module_exception
 import util.windows_util as win_util
 import util.inspect_bomb as inspect_bomb
@@ -18,11 +19,9 @@ from features.indicator import get_indicator_features
 from features.light_monitor import LightMonitor
 import features.needy_util as needy_features
 import config
-from view.overlay import GUIOverlay
 
 # Monitors whether the light has turned off from a seperate thread.
 LIGHT_MONITOR = None
-GUI_OVERLAY = None
 
 def sleep_until_start():
     """
@@ -369,6 +368,7 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
         mod_index = index if index < 6 else index - 6
         label = modules[index]
         select_module(mod_index)
+        add_overlay_properties("module_info", (label))
         SC, x, y = screenshot_module()
         mod_pos = (x, y)
         cv2_img = convert_to_cv2(SC)
@@ -407,7 +407,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
     needy_indices = list(filter(lambda i: modules[i] > 19, [x for x in range(len(modules))]))
     needy_timestamp = duration[0]
     module_durations = [2, 5, 2, 12, 10, 2, 14, 8, 8, 8, 25]
-    log(f"Needy modules: {len(needy_indices)}, Positions: {needy_indices}", config.LOG_DEBUG)
+    log(f"Needy modules: {len(needy_indices)}", config.LOG_DEBUG)
 
     solved_modules = 0
     num_modules = len(list(filter(lambda x: 8 < x < 20, modules)))
@@ -460,7 +460,8 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
                 handle_module_exception(mod_name, cv2_img)
             sleep(0.1)
             deselect_module()
-        if module == 5: # We have gone through 6 modules, flip the bomb over and proceeed.
+        if module == 5 and num_modules > 5:
+            # We have gone through all modules on one side of the bomb, flip it over and continue.
             SW, SH = win_util.get_screen_size()
             inspect_bomb.flip_bomb(SW, SH)
             sleep(0.75)
@@ -470,10 +471,11 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
         log("We did it! We live to defuse another bomb!")
     else:
         log("Some modules could not be disarmed, it seems we are doomed...")
+        raise KeyboardInterrupt # We failed.
 
 def add_overlay_properties(key, value):
     if "visualize" in argv:
-        GUI_OVERLAY.add_status(key, value)
+        GUIOverlay.add_status(key, value)
 
 def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modules):
     LIGHT_MONITOR.start()
@@ -489,7 +491,8 @@ def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modu
 
     modules = 12 if num_modules > 5 else 6
 
-    add_overlay_properties("debug_bg_img", convert_to_cv2(screenshot(0, 0, 1920, 1080)))
+    sw, sh = win_util.get_screen_size()
+    #add_overlay_properties("debug_bg_img", convert_to_cv2(screenshot(300, 0, sw-300, sh-100)))
     add_overlay_properties("module_positions", [get_module_coords(x) for x in range(6)])
     add_overlay_properties("module_names", [module_classifier.LABELS[x]
                                             for x in predictions[:modules]])
@@ -512,6 +515,10 @@ def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modu
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
+
+    if "visualize" in argv: # Create GUI overlay.
+        GUIOverlay.start()
+
     log("Loading classifier models...")
     # Load model for classifying modules.
     MODEL = module_classifier.load_from_file("../resources/trained_models/module_model")
@@ -528,15 +535,15 @@ if __name__ == "__main__":
 
     LIGHT_MONITOR = LightMonitor() # Track when the light in the room turns off.
 
-    if "visualize" in argv:
-        GUI_OVERLAY = GUIOverlay()
-
     LEVELS = [None]
     SPLITS = []
     if "speedrun" in argv:
         log("Running in 'speedrun' mode, TAS engaged!")
         LEVELS_PER_PAGE = [5, 13, 20, 26, 32]
         LEVELS = inspect_bomb.LEVEL_COORDS
+
+    if "visualize" in argv:
+        config.VERBOSITY = config.LOG_OVERLAY
 
     for i, level in enumerate(LEVELS):
         speedrunning = level is not None
@@ -556,11 +563,9 @@ if __name__ == "__main__":
             get_bomb_details(CHAR_MODEL, holder) # This method is run in parallel.
 
             start_level()
-            if "speedrun" in argv:
+            if "speedrun" in argv and i == 0:
                 SPEEDRUN_TIMESTAMP = time()
                 add_overlay_properties("speedrun_time", SPEEDRUN_TIMESTAMP)
-            if "visualize" in argv:
-                GUI_OVERLAY.start()
 
             log("Waiting for level to start...")
             await_level_start() # Wait for level to load and bomb timer to start.
@@ -572,9 +577,9 @@ if __name__ == "__main__":
         run_level(MODEL, CHAR_MODEL, SYMBOL_MODEL, MINUTES, SECONDS, NUM_MODULES)
 
         if speedrunning: # Select next level.
-            SPLITS.append(time() - SPEEDRUN_TIMESTAMP)
-            add_overlay_properties("speedruns_splits", SPLITS)
-            log(f"Split: {SPLITS[-1]:.3f} seconds.", module="Speedrun")
+            SPLITS.append((level, time() - SPEEDRUN_TIMESTAMP))
+            add_overlay_properties("speedrun_splits", SPLITS)
+            log(f"Split: {SPLITS[-1][1]:.3f} seconds.", module="Speedrun")
             log(f"Completed: {i+1}/{len(LEVELS)} levels.", module="Speedrun")
             sleep(11)
             inspect_bomb.continue_button()
@@ -582,4 +587,4 @@ if __name__ == "__main__":
             inspect_bomb.select_bombs_menu()
             sleep(1)
 
-    GUI_OVERLAY.shut_down()
+    GUIOverlay.shut_down()
