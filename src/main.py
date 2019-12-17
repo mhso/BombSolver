@@ -424,7 +424,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
         if 8 < label < 20:
             select_module(mod_index)
             SC, x, y = screenshot_module()
-            add_overlay_properties("module_selected", (x, y, mod_index))
+            #add_overlay_properties("module_selected", (x, y, mod_index))
             mod_pos = (x, y)
             cv2_img = convert_to_cv2(SC)
             mod_name = module_classifier.LABELS[label]
@@ -492,8 +492,7 @@ def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modu
     modules = 12 if num_modules > 5 else 6
 
     sw, sh = win_util.get_screen_size()
-    #add_overlay_properties("debug_bg_img", convert_to_cv2(screenshot(300, 0, sw-300, sh-100)))
-    add_overlay_properties("module_positions", [get_module_coords(x) for x in range(6)])
+    #add_overlay_properties("module_positions", [get_module_coords(x) for x in range(6)])
     add_overlay_properties("module_names", [module_classifier.LABELS[x]
                                             for x in predictions[:modules]])
 

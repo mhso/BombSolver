@@ -1,7 +1,7 @@
 from glob import glob
 from sys import argv
 from time import time
-from threading import Thread, Lock
+from threading import Thread, Event
 from mss import mss
 from PIL import Image
 from solvers.maze_solver import MAZES, DIRECTIONS
@@ -47,7 +47,7 @@ class GUIOverlay:
     bg_img = None
     properties = {}
     drawing_order = []
-    lock = Lock()
+    frame_drawn = None
     is_active = True
     selected_module = (0, 0)
     padding_x = 300
@@ -56,6 +56,8 @@ class GUIOverlay:
 
     @staticmethod
     def start():
+        GUIOverlay.frame_drawn = Event()
+        GUIOverlay.frame_drawn.set()
         Thread(target=GUIOverlay.create_window).start()
 
     @staticmethod
@@ -187,7 +189,7 @@ class GUIOverlay:
             ("speedrun_splits", ["module_positions", "module_selected"])
         ]
         for source, targets in conflicts: # :^)
-            if (prop == source):
+            if prop == source:
                 for target in targets:
                     if target in GUIOverlay.properties:
                         del GUIOverlay.properties[target]
@@ -195,13 +197,13 @@ class GUIOverlay:
 
     @staticmethod
     def add_status(prop, value):
-        GUIOverlay.lock.acquire(True)
+        if GUIOverlay.frame_drawn is not None:
+            GUIOverlay.frame_drawn.wait()
         GUIOverlay.properties[prop] = value
         if not prop in GUIOverlay.drawing_order:
             GUIOverlay.remove_conflicting_prop(prop)
             GUIOverlay.drawing_order.append(prop)
             GUIOverlay.drawing_order.sort(key=GUIOverlay.draw_order_cmp)
-        GUIOverlay.lock.release()
 
     @staticmethod
     def set_status(status_dict):
@@ -231,9 +233,7 @@ class GUIOverlay:
 
     @staticmethod
     def draw_changed_properties():
-        GUIOverlay.lock.acquire(True)
         GUIOverlay.draw_properties(GUIOverlay.drawing_order)
-        GUIOverlay.lock.release()
 
     @staticmethod
     def create_bg_image():
@@ -252,6 +252,7 @@ class GUIOverlay:
         path = "../resources/misc/recorded_runs/"
         num_files = len(glob(path+"*.avi"))
         record = "record" in argv
+        display = "display" in argv
         record_path = f"{path}{num_files}.avi"
         mon_bbox = {"top": 0, "left": 300, "width": sw-300, "height": sh-100}
         sct = mss()
@@ -259,15 +260,18 @@ class GUIOverlay:
             fourcc = cv2.VideoWriter_fourcc(*'XVID')
             capture = cv2.VideoWriter(record_path, fourcc, float(fps), (sw, sh), True)
 
-        cv2.namedWindow(GUIOverlay.window_name)
-        cv2.moveWindow(GUIOverlay.window_name, sw-15, 0)
+        if display:
+            cv2.namedWindow(GUIOverlay.window_name)
+            cv2.moveWindow(GUIOverlay.window_name, sw-15, 0)
         time_started = GUIOverlay.properties.get("speedrun_time", None)
         timestamp = int(time())
 
+        total_frames = 100
+
         try:
             while GUIOverlay.is_active:
-                img = sct.grab(mon_bbox)
-                img = np.array(img)
+                frame_time = time()
+                img = np.array(sct.grab(mon_bbox))
                 GUIOverlay.bg_img = GUIOverlay.pad_bg_img(img)
                 if time_started is not None:
                     new_time = int(time())
@@ -276,14 +280,21 @@ class GUIOverlay:
                         GUIOverlay.add_status("speedrun_time", timestamp - time_started)
                 elif "speedrun_time" in GUIOverlay.properties:
                     time_started = GUIOverlay.properties["speedrun_time"]
-                GUIOverlay.draw_changed_properties()
 
+                GUIOverlay.frame_drawn.clear()
+                GUIOverlay.draw_changed_properties()
+                GUIOverlay.frame_drawn.set()
+
+                if display:
+                    cv2.imshow(GUIOverlay.window_name, GUIOverlay.bg_img)
                 if record and time_started is not None:
                     img = cv2.cvtColor(GUIOverlay.bg_img, cv2.COLOR_BGRA2BGR)
                     capture.write(img)
-                cv2.imshow(GUIOverlay.window_name, GUIOverlay.bg_img)
-                key = cv2.waitKey(1000 // fps)
-                if key == ord('q'):
+                wait_time = int(((time() - frame_time) - fps / 1000) * 1000)
+                wait_time = 1 if wait_time < 1 else wait_time
+                key = cv2.waitKey(wait_time)
+                total_frames -= 1
+                if key == ord('q') or total_frames == 0:
                     break
         finally:
             if record:
