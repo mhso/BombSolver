@@ -1,17 +1,22 @@
-from time import time
-import cv2
-from view.overlay import GUIOverlay
+if __name__ == "__main__":
+    from time import time, sleep
+    import view.overlay
 
-test_img = cv2.imread("../resources/misc/test_full2.png", cv2.IMREAD_COLOR)
-test_img = test_img[:-100, 300:, :]
+    conn = view.overlay.initialize()
 
-GUIOverlay.add_status("speedrun_time", time())
-GUIOverlay.start()
+    conn.send(("speedrun_time", time()))
 
-GUIOverlay.add_status("speedrun_splits", [("first_bomb", 30)])
-GUIOverlay.add_status("speedrun_splits", [("first_bomb", 30), ("one_step_up", 45)])
-GUIOverlay.add_status("speedrun_splits",
-                      [("first_bomb", 30), ("one_step_up", 45), ("new_old", 100)])
-GUIOverlay.add_status("module_selected", (825, 388, 4))
-GUIOverlay.add_status("module_info", (17, "MAZE_2"))
-GUIOverlay.add_status("log", ["Some data", "Some more data", "EVEN more data"])
+    conn.send(("active", True))
+
+    conn.send(("speedrun_splits", [("first_bomb", 30)]))
+    conn.send(("speedrun_splits", [("first_bomb", 30), ("one_step_up", 45)]))
+    conn.send(("speedrun_splits", [("first_bomb", 30), ("one_step_up", 45), ("new_old", 100)]))
+    conn.send(("module_selected", (825, 388, 4)))
+    conn.send(("module_info", (17, "MAZE_2")))
+    conn.send(("log", ["Some data", "Some more data", "EVEN more data"]))
+
+    try:
+        while True:
+            sleep(0.5)
+    except KeyboardInterrupt:
+        conn.send(("active", False))

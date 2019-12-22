@@ -2,7 +2,7 @@ from time import sleep, time
 from sys import argv
 from math import floor
 from numpy import array
-from view.overlay import GUIOverlay
+from view.overlay import initialize as overlay_init
 from debug import log, handle_module_exception
 import util.windows_util as win_util
 import util.inspect_bomb as inspect_bomb
@@ -22,6 +22,7 @@ import config
 
 # Monitors whether the light has turned off from a seperate thread.
 LIGHT_MONITOR = None
+OVERLAY_CONN = None
 
 def sleep_until_start():
     """
@@ -474,8 +475,8 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
         raise KeyboardInterrupt # We failed.
 
 def add_overlay_properties(key, value):
-    if "visualize" in argv:
-        GUIOverlay.add_status(key, value)
+    if "record" in argv:
+        OVERLAY_CONN.send((key, value))
 
 def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modules):
     LIGHT_MONITOR.start()
@@ -515,8 +516,8 @@ def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modu
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
 
-    if "visualize" in argv: # Create GUI overlay.
-        GUIOverlay.start()
+    if "record" in argv: # Create GUI overlay.
+        OVERLAY_CONN = overlay_init()
 
     log("Loading classifier models...")
     # Load model for classifying modules.
@@ -541,7 +542,7 @@ if __name__ == "__main__":
         LEVELS_PER_PAGE = [5, 13, 20, 26, 32]
         LEVELS = inspect_bomb.LEVEL_COORDS
 
-    if "visualize" in argv:
+    if "record" in argv:
         config.VERBOSITY = config.LOG_OVERLAY
 
     for i, level in enumerate(LEVELS):
@@ -586,4 +587,4 @@ if __name__ == "__main__":
             inspect_bomb.select_bombs_menu()
             sleep(1)
 
-    GUIOverlay.shut_down()
+    OVERLAY_CONN.send(("active", False))
