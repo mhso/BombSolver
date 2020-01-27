@@ -39,12 +39,10 @@ class GUIOverlay:
     window_name = "BombSolver"
 
     @staticmethod
-    def pad_bg_img(img):
-        sw, sh = win_util.get_screen_size()
-        h, w = img.shape[:2]
-        GUIOverlay.padding_x = sw-w
-        GUIOverlay.padding_y = sh-h
-        return np.pad(img, ((sh-h, 0), (0, sw-w), (0, 0)), "constant", constant_values=0)
+    def pad_bg_img(img, pad_x, pad_y):
+        new_img = img
+        new_img[pad_x:, :-pad_y] = 0
+        return new_img
 
     @staticmethod
     def remove_conflicting_prop(prop):
@@ -89,7 +87,7 @@ class GUIOverlay:
         record_path = f"{path}{num_files+1}/"
         mkdir(record_path)
 
-        mon_bbox = {"top": 0, "left": 300, "width": sw-300, "height": sh-100}
+        mon_bbox = {"top": 0, "left": 0, "width": sw, "height": sh}
         sct = mss()
 
         queue = Queue(5)
@@ -98,6 +96,9 @@ class GUIOverlay:
 
         Thread(target=listen, args=(conn,)).start()
 
+        target_fps = 30
+        secs_per_frame = 1 / target_fps
+
         try:
             while not GUIOverlay.is_active:
                 sleep(0.1) # Wait for start.
@@ -105,8 +106,9 @@ class GUIOverlay:
             time_started = GUIOverlay.properties.get("speedrun_time", None)
             timestamp = int(time())
             while GUIOverlay.is_active:
+                frame_time = time()
                 img = np.array(sct.grab(mon_bbox))
-                img = GUIOverlay.pad_bg_img(img)
+                img = GUIOverlay.pad_bg_img(img, 300, 100)
                 if time_started is not None:
                     new_time = int(time())
                     if new_time > timestamp:
@@ -114,6 +116,10 @@ class GUIOverlay:
                         GUIOverlay.add_property("speedrun_time", timestamp - time_started)
                 elif "speedrun_time" in GUIOverlay.properties:
                     time_started = GUIOverlay.properties["speedrun_time"]
+
+                frame_time = time() - frame_time
+                if frame_time < secs_per_frame:
+                    sleep(secs_per_frame - frame_time)
 
                 if time_started is not None:
                     data = (img, GUIOverlay.properties, time() - time_started)

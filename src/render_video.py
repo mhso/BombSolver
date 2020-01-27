@@ -25,23 +25,12 @@ def format_level(level):
     return [(level, mid_y)]
 
 def draw_text(img, text, pt_1, scale, color, thickness=2, font=cv2.FONT_HERSHEY_PLAIN):
-    padding_x = 300
-    padding_y = 100
-    pt_1 = pt_1[0] - padding_x, pt_1[1] + padding_y
     cv2.putText(img, text, pt_1, font, scale, color, thickness)
 
 def draw_rect(img, pt_1, pt_2, color, thickness):
-    padding_x = 300
-    padding_y = 100
-    pt_1 = pt_1[0] - padding_x, pt_1[1] + padding_y
-    pt_2 = pt_2[0] - padding_x, pt_2[1] + padding_y
     cv2.rectangle(img, pt_1, pt_2, color, thickness)
 
 def draw_line(img, pt_1, pt_2, color, thickness):
-    padding_x = 300
-    padding_y = 100
-    pt_1 = pt_1[0] - padding_x, pt_1[1] + padding_y
-    pt_2 = pt_2[0] - padding_x, pt_2[1] + padding_y
     cv2.line(img, pt_1, pt_2, color, thickness)
 
 def draw_speedrun_splits(img, splits):
@@ -69,7 +58,7 @@ def draw_speedrun_splits(img, splits):
 def draw_speedrun_time(img, s_time):
     sw, _ = win_util.get_screen_size()
     time_str = format_time(s_time, 0)
-    draw_text(img, time_str, (sw+120, -50), 2.8, (255, 255, 255), 2)
+    draw_text(img, time_str, (sw-180, 50), 2.8, (255, 255, 255), 2)
 
 def draw_modules(img, positions, names):
     offset = 150
@@ -101,7 +90,7 @@ def log_info(img, info):
     width = 350
     x = sw - width
     y_step = 20
-    start_y = 0
+    start_y = 100
     draw_rect(img, (x-10, start_y), (sw, sh), (0, 0, 0), -1)
     max_lines = int(sh // 23) # 47 for 1080.
     for i, s in enumerate(info[-max_lines:]):

@@ -4,8 +4,6 @@ if __name__ == "__main__":
 
     conn = view.overlay.initialize()
 
-    conn.send(("speedrun_time", time()))
-
     conn.send(("active", True))
 
     conn.send(("speedrun_splits", [("first_bomb", 30)]))
