@@ -3,6 +3,7 @@ from numpy import array
 import cv2
 from debug import log
 from config import LOG_DEBUG
+from features import util as features_util
 
 LETTERS = {
     ".-"    : "a",
@@ -61,22 +62,13 @@ def get_word_from_prefix(prefix):
     return index if matches == 1 else None
 
 def is_lit(pixel, rgb):
-    lit_low = (40, 180, 180)
-    lit_high = (100, 255, 255)
-    red, green, blue = rgb
-    return (red[pixel] >= lit_low[2] and green[pixel] >= lit_low[1]
-            and blue[pixel] >= lit_low[0] and red[pixel] <= lit_high[2]
-            and green[pixel] <= lit_high[1] and blue[pixel] <= lit_high[0])
-
-def split_colors(img):
-    blue = img[:, :, 0]
-    green = img[:, :, 1]
-    red = img[:, :, 2]
-    return (red, green, blue)
+    lit_low = (180, 180, 40)
+    lit_high = (255, 255, 100)
+    return features_util.color_in_range(pixel, rgb, lit_low, lit_high)
 
 def solve(img, screenshot_func):
     pixel = (43, 108)
-    rgb = split_colors(img)
+    rgb = features_util.split_channels(img)
 
     dot_pause = 0.1 # 15 frames = 0.25 seconds.
     dash_pause = 0.6 # 47 frames ~ 0.75 seconds.
@@ -91,8 +83,8 @@ def solve(img, screenshot_func):
         symbols = ""
         while True:
             sleep(sleep_duration)
-            sc, _, _ = screenshot_func()
-            rgb = split_colors(cv2.cvtColor(array(sc), cv2.COLOR_RGB2BGR)) # Grab new image.
+            screenshot, _, _ = screenshot_func()
+            rgb = features_util.split_channels(cv2.cvtColor(array(screenshot), cv2.COLOR_RGB2BGR))
 
             if is_lit(pixel, rgb) != lit: # Check if light has changed state.
                 lit = not lit
