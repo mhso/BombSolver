@@ -37,7 +37,6 @@ def get_next_color(img, sc_func, ranges, features, curr_match):
     coords = [(140, 95), (74, 155), (204, 156), (140, 216)]
     colors = ["Red", "Blue", "Green", "Yellow"]
     button_coords = []
-    rgb = feature_util.split_channels(img)
     pause_between_blinks = 0.35
     colors_matched = 0
     timestamp = 0

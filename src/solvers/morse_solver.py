@@ -50,7 +50,7 @@ FREQUENCIES = [
 def get_word_from_prefix(prefix):
     """
     Returns index of the word that starts with the given prefix,
-    or None if there are zero or more than one of such matches.
+    or None if there are zero, or more than one, of such matches.
     """
     matches = 0
     index = 0
