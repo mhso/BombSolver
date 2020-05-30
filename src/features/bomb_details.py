@@ -80,6 +80,17 @@ def get_module_characters():
         masks = [mask1, mask2]
     return masks
 
+def fix_number(val):
+    result = ""
+    for c in val:
+        if c == "i":
+            result += "1"
+        if c == "b":
+            result += "8"
+        else:
+            result += c
+    return int(result)
+
 def format_time(prediction):
     result = [5, 0, 0]
     if prediction[0] == "b":
@@ -102,7 +113,7 @@ def get_details_async(model, holder):
     best_pred = classifier_util.get_best_prediction(prediction)
     labels = [classifier.LABELS[p] for p in best_pred]
     holder.append(format_time(labels[:3]))
-    holder.append(int("".join(labels[3:])))
+    holder.append(fix_number(labels[3:]))
 
 def get_bomb_details(model, storing_list):
     Thread(target=get_details_async, args=(model, storing_list)).start()

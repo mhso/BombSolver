@@ -48,6 +48,19 @@ FREQUENCIES = [
     "3.582", "3.592", "3.595", "3.600"
 ]
 
+def get_word_from_substring(substr):
+    """
+    Returns index of the word that contains the given substring,
+    or None if there are zero, or more than one, of such matches.
+    """
+    matches = 0
+    index = 0
+    for i, word in enumerate(WORDS):
+        if word.find(substr) != -1:
+            matches += 1
+            index = i
+    return index if matches == 1 else None
+
 def get_word_from_prefix(prefix):
     """
     Returns index of the word that starts with the given prefix,
@@ -76,7 +89,11 @@ def solve(img, screenshot_func):
     word_pause = 2.5 # 194 frames ~ 3.3 seconds
     sleep_duration = 0.05
     duration = 0
+    solved_from_prefix = True
     for i in range(2): # Run twice to ensure the whole sequence of letters are recorded.
+        if not solved_from_prefix:
+            log("Solved Morse in first round!", LOG_DEBUG, "Morse")
+            break
         lit = is_lit(pixel, rgb)
         checkpoint = time()
         letters = ""
@@ -96,8 +113,12 @@ def solve(img, screenshot_func):
                         letter = LETTERS.get(symbols, '')
                         log(f"LETTER: {letter}", LOG_DEBUG, "Morse")
                         letters += letter
+                        if i == 0 and len(letters) > 1 and get_word_from_substring(letters[1:]) is not None:
+                            # Terminate if we can already guess from a substring of the word.
+                            solved_from_prefix = False # Indicate word was solved in first round.
+                            break
                         if i == 1 and get_word_from_prefix(letters) is not None:
-                            break # Terminate if we can already guess the word.
+                            break # Terminate if we can already guess from a prefix of the word.
                         symbols = ""
                     if duration >= word_pause:
                         pos_str = "START" if i == 0 else "END"
@@ -113,6 +134,8 @@ def solve(img, screenshot_func):
                         symbols += "."
 
     # Return amount of times to press morse button.
-    presses = get_word_from_prefix(letters)
+    presses = (get_word_from_prefix(letters)
+               if solved_from_prefix
+               else get_word_from_substring(letters))
     log(f"Word: {WORDS[presses]}", LOG_DEBUG, "Morse")
     return presses, FREQUENCIES[presses]

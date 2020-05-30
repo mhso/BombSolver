@@ -20,8 +20,7 @@ from features.light_monitor import LightMonitor
 import features.needy_util as needy_features
 import config
 
-# Monitors whether the light has turned off from a seperate thread.
-LIGHT_MONITOR = None
+LIGHT_MONITOR = None # Monitors (from a seperate thread) whether the light has turned off.
 OVERLAY_CONN = None
 
 def sleep_until_start():
@@ -316,7 +315,7 @@ def solve_whos_on_first(image, char_model, mod_pos):
 
 def solve_needy_vent(image, mod_pos):
     if not needy_features.is_active(image):
-        log ("Needy Vent is not active.", config.LOG_DEBUG, "Needy Vent")
+        log("Needy Vent is not active.", config.LOG_DEBUG, "Needy Vent")
         return
     mod_x, mod_y = mod_pos
     button_y, button_x = needy_vent_solver.solve(image)
@@ -587,4 +586,5 @@ if __name__ == "__main__":
             inspect_bomb.select_bombs_menu()
             sleep(1)
 
-    OVERLAY_CONN.send(("active", False))
+    if "record" in argv:
+        OVERLAY_CONN.send(("active", False))

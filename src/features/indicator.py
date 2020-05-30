@@ -134,7 +134,7 @@ def get_characters(image):
     thresh, contours, bbox = get_segmented_image(image)
     gray = cv2.cvtColor(image.copy(), cv2.COLOR_BGR2GRAY)
     lit = indicator_is_lit(gray[bbox[0] : bbox[1], bbox[2] : bbox[3]])
-    log(f"Indicator is {'lit' if lit else 'not lit'}", config.LOG_DEBUG)
+    log(f"Indicator is {'lit' if lit else 'not lit'}", config.LOG_DEBUG, "Indicator")
     masks = get_masked_images(image, contours)
     if len(masks) != 3:
         log(f"WARNING: Length of indicator masks != 3 (len={len(masks)}).", config.LOG_WARNING)
@@ -142,7 +142,7 @@ def get_characters(image):
     if not alignment:
         log("WARNING: Indicator alignment could not be determined!", config.LOG_WARNING)
     else:
-        log(f"Indicator is {'left' if alignment == 1 else 'right'} aligned.", config.LOG_DEBUG)
+        log(f"Indicator is {'left' if alignment == 1 else 'right'} aligned.", config.LOG_DEBUG, "Indicator")
     masks = rotate_masks(masks, alignment)
     if alignment == 1:
         masks.reverse()
