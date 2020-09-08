@@ -24,5 +24,5 @@ The *Password* module uses a DFS-ish approach, in order to quickly find the most
 
 Any (non-modded) bomb can be defused in record time!
 
-### Video of the program in action
+### Video of the BombSolver in action
 [![The Bomb Solver in action](https://img.youtube.com/vi/ciO1RNPe2g0/maxresdefault.jpg)](https://www.youtube.com/watch?v=ciO1RNPe2g0)
