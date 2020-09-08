@@ -1,8 +1,6 @@
 # BombSolver
 ### Defusing bombs in *Keep Talking and Nobody Explodes* using Image Analysis and Machine Learning
 
-[![The Bomb Solver in action](https://img.youtube.com/vi/ciO1RNPe2g0/maxresdefault.jpg)](https://www.youtube.com/watch?v=ciO1RNPe2g0)
-
 ### How it works
 The BombSolver has ***no*** knowledge of the game code.
 It only controls the cursor and identifies features on the bomb by taking screenshots.
@@ -25,3 +23,6 @@ The *Maze* module is solved by first detecting which maze it is, and then findin
 The *Password* module uses a DFS-ish approach, in order to quickly find the most likely word.
 
 Any (non-modded) bomb can be defused in record time!
+
+### Video of the program in action
+[![The Bomb Solver in action](https://img.youtube.com/vi/ciO1RNPe2g0/maxresdefault.jpg)](https://www.youtube.com/watch?v=ciO1RNPe2g0)
