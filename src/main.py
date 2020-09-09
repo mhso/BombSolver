@@ -69,7 +69,8 @@ def get_time_remaining(time_started, minutes, seconds):
 # /========================= BOMB FEATURES =========================\
 
 def serial_contains_vowel(serial_num):
-    vowels = ["A", "E", "I", "U", "Y"]
+    #In the base game, O and Y don't appear. There's only one modded module which considers Y a vowel, and there are mods which can allow O and Y.
+    vowels = ["A", "E", "I", "O", "U"]
     for char in serial_num:
         if char in vowels:
             return True
