@@ -188,8 +188,8 @@ def solve(img, model):
         log(f"No words match in first phase, trying to find closest match instead...",
             LOG_DEBUG, "Who's on First?")
         # If something went wrong when reading the word on the screen,
-        # perhaps due to a character segmentation error, or a neural network
-        # failed prediction, we try to find the closest matching word.
+        # perhaps due to a character segmentation error, or a failed predictiion
+        # from the neural network, we try to find the closest matching word.
         word_on_screen = closest_word_match(word_on_screen)
     step_1 = STEP_1_SOLUTION.get(word_on_screen)
     for i, word in enumerate(words):

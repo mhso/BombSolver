@@ -17,6 +17,7 @@ class LightMonitor:
         self.exploded = False
         self.change_event = Event()
         self.is_active = False
+        self.lights_on = True
 
     def start(self):
         self.is_active = True
@@ -35,28 +36,27 @@ class LightMonitor:
         _, SH = get_screen_size()
         lo = (30, 30, 30)
         hi = (255, 255, 255)
-        lights_on = True
         self.change_event.set()
         while self.is_active:
             sc = screenshot(0, SH-200, 200, 200)
             img = features_util.convert_to_cv2(sc)
             rgb = features_util.split_channels(img)
-            if lights_on:
+            if self.lights_on:
                 if not features_util.color_in_range(self.pixel, rgb, lo, hi):
                     if self.bomb_exploded(rgb): # We died :(
                         self.is_active = False
                         self.exit_after_explosion()
                     else:
                         log("Lights in the room are turned off. Pausing execution temporarily...")
-                        lights_on = False
+                        self.lights_on = False
                         self.change_event.clear()
-                        sleep(3)
+                        sleep(1)
             else:
                 if features_util.color_in_range(self.pixel, rgb, lo, hi):
                     log("Lights in the room are turned back on. Resuming...")
                     self.change_event.set()
-                    lights_on = True
-                    sleep(3)
+                    self.lights_on = True
+                    sleep(1)
             sleep(0.25)
 
     def wait_for_light(self):

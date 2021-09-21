@@ -1,6 +1,6 @@
-from keras.layers import BatchNormalization, Conv2D, add
-from keras.layers import LeakyReLU
-from keras.regularizers import l2
+from tensorflow.keras.layers import BatchNormalization, Conv2D, add
+from tensorflow.keras.layers import LeakyReLU
+from tensorflow.keras.regularizers import l2
 import config
 
 def conv_block(feat_maps_out, prev):

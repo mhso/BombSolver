@@ -11,20 +11,25 @@ from debug import log
 
 def train_network(model, classifier, path, train_x, train_y, test_x, test_y, steps=400):
     prog = Progress(steps)
-    for i in range(steps):
-        sample_images, sample_labels = dataset_util.sample_data(train_x, train_y, classifier.BATCH_SIZE)
-        result = classifier.train(model, sample_images, sample_labels)
-        acc = classifier.evaluate(model, test_x, test_y)[1] * 100
-        model_acc = result['acc'][-1]*100
-        model_loss = result['loss'][-1]
-        save_string = ""
-        if i % 20 == 0:
-            classifier_util.save_to_file(model, path)
-            save_string = " - Saving model to file..."
-        prog.status = (f"Step {i+1}/{steps} - Real acc: {acc:.3f}% - "
-                       + f"Training acc: {model_acc:.3f}% - Model loss: "
-                       + f"{model_loss}{save_string}")
-        prog.increment()
+    try:
+        for i in range(steps):
+            sample_images, sample_labels = dataset_util.sample_data(train_x, train_y, classifier.BATCH_SIZE)
+            result = classifier.train(model, sample_images, sample_labels)
+            acc = classifier.evaluate(model, test_x, test_y)[1] * 100
+            model_acc = result['accuracy'][-1] * 100
+            model_loss = result['loss'][-1]
+            save_string = ""
+            if i % 20 == 0:
+                classifier_util.save_to_file(model, path)
+                save_string = " - Saving model to file..."
+            prog.status = (
+                f"Step {i+1}/{steps} - Val acc: {acc:.3f}% - "
+                + f"Train acc: {model_acc:.3f}% - Model loss: "
+                + f"{model_loss}{save_string}"
+            )
+            prog.increment()
+    except KeyboardInterrupt:
+        log("Interrupting training prematurely...")
 
 def test_network(model, classifier, test_x, test_y):
     for (image, label) in zip(test_x, test_y):
@@ -79,7 +84,7 @@ if len(argv) > 2 and argv[2] == "test":
     test_network(MODEL, CLASSIFIER, X_TEST, Y_TEST)
 else:
     log("Building Neural Network model...")
-    MODEL, _, _ = CLASSIFIER.build_model()
+    MODEL = CLASSIFIER.build_model()
 
     log("Training network...")
     STEPS = 600 if DATA_TYPE == "modules" else 400

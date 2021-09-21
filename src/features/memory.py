@@ -36,7 +36,8 @@ def get_characters(img):
     for image in [screen] + labels:
         thresh = get_threshold(image)
         min_y, max_y, min_x, max_x = features_util.crop_to_content(thresh)
-        masks.append(thresh[min_y:max_y, min_x:max_x])
+        mask = thresh[min_y:max_y, min_x:max_x]
+        masks.append(mask)
     masks[0] = dataset_util.resize_img(masks[0], (LABEL_W, LABEL_H))
     return masks, coords
 

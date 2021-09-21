@@ -1,4 +1,3 @@
-import cv2
 from PIL import ImageGrab, Image
 
 def screenshot(x, y, w, h):

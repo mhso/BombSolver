@@ -62,7 +62,7 @@ def flip_bomb(SW, SH):
     win_util.mouse_move(SW - int(SW / 4.4), mid_y + (mid_y // 9))
     sleep(0.5)
 
-def inspect_bomb(num_modules=None):
+def inspect_bomb(inspect_both_sides=True):
     sw, sh = win_util.get_screen_size()
     mid_x = sw // 2
     mid_y = sh // 2
@@ -82,11 +82,11 @@ def inspect_bomb(num_modules=None):
     top_img = inspect_side(int(sw / 2.75), sh, 720, 0, 480, sh)
     # Inspect bottom side.
     bottom_img = inspect_side(int(sw / 2.75), 0, 720, 0, 480, sh)
-    # Inspect back of bomb.
     win_util.mouse_up(mid_x, mid_y, btn="right")
     sleep(0.5)
     return_tupl = (front_img, left_img, right_img, top_img, bottom_img)
-    if num_modules is None or num_modules > 5:
+    if inspect_both_sides:
+        # Only capture images of the back of the bomb if there are more than 5 modules.
         flip_bomb(sw, sh)
         back_img = screenshot(460, 220, 1000, 640)
         sleep(0.4)

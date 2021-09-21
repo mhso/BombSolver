@@ -89,9 +89,9 @@ def solve(img, screenshot_func):
     word_pause = 2.5 # 194 frames ~ 3.3 seconds
     sleep_duration = 0.05
     duration = 0
-    solved_from_prefix = True
+    solved_from_substr = False
     for i in range(2): # Run twice to ensure the whole sequence of letters are recorded.
-        if not solved_from_prefix:
+        if solved_from_substr:
             log("Solved Morse in first round!", LOG_DEBUG, "Morse")
             break
         lit = is_lit(pixel, rgb)
@@ -115,7 +115,7 @@ def solve(img, screenshot_func):
                         letters += letter
                         if i == 0 and len(letters) > 1 and get_word_from_substring(letters[1:]) is not None:
                             # Terminate if we can already guess from a substring of the word.
-                            solved_from_prefix = False # Indicate word was solved in first round.
+                            solved_from_substr = True # Indicate word was solved in first round.
                             break
                         if i == 1 and get_word_from_prefix(letters) is not None:
                             break # Terminate if we can already guess from a prefix of the word.
@@ -134,8 +134,9 @@ def solve(img, screenshot_func):
                         symbols += "."
 
     # Return amount of times to press morse button.
-    presses = (get_word_from_prefix(letters)
-               if solved_from_prefix
-               else get_word_from_substring(letters))
+    presses = (
+        get_word_from_substring(letters[1:]) if solved_from_substr
+        else get_word_from_prefix(letters)
+    )
     log(f"Word: {WORDS[presses]}", LOG_DEBUG, "Morse")
     return presses, FREQUENCIES[presses]

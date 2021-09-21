@@ -2,16 +2,20 @@ from time import sleep, time
 from sys import argv
 from math import floor
 from numpy import array
-from view.overlay import initialize as overlay_init
+#from view.overlay import initialize as overlay_init
 from debug import log, handle_module_exception
 import util.windows_util as win_util
 import util.inspect_bomb as inspect_bomb
-from model import (module_classifier, character_classifier, symbol_classifier,
-                   classifier_util, dataset_util)
+from model import (
+    module_classifier, character_classifier, symbol_classifier,
+    classifier_util, dataset_util
+)
 from model.grab_img import screenshot
-from solvers import (wire_solver, button_solver, symbols_solver, simon_solver,
-                     wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
-                     maze_solver, password_solver, morse_solver, needy_vent_solver, needy_knob_solver)
+from solvers import (
+    wire_solver, button_solver, symbols_solver, simon_solver,
+    wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
+    maze_solver, password_solver, morse_solver, needy_vent_solver, needy_knob_solver
+)
 from features.serial_number import get_serial_number
 from features.bomb_details import get_bomb_details
 from features.util import convert_to_cv2
@@ -41,9 +45,9 @@ def start_level():
 
 def await_level_start():
     """
-    Sleep until the given level has started (i.e. timer on bomb has started).
+    Sleep until the given level has started (when the light is turned on).
     """
-    sleep(16.7)
+    LIGHT_MONITOR.wait_for_light()
 
 def identify_side_features(sides, model):
     flattened = []
@@ -76,6 +80,10 @@ def serial_contains_vowel(serial_num):
     return False
 
 def extract_serial_number_features(serial_num):
+    """
+    Get relevanmt features about the serial number.
+    This includes wether the last digit is odd and whether it contains a vowel.
+    """
     features = {}
     try:
         features["last_serial_odd"] = (int(serial_num[-1])) % 2 == 1
@@ -97,9 +105,9 @@ def extract_side_features(sides, labels, character_model):
             cv2_img = convert_to_cv2(img)
             mod_name = module_classifier.LABELS[labels[index]]
             try:
-                if labels[index] == 1:
+                if labels[index] == 1: # Single battery (large or small).
                     features["batteries"] += 1
-                elif labels[index] == 2:
+                elif labels[index] == 2: # Double batteries.
                     features["batteries"] += 2
                 elif labels[index] == 3: # Serial number.
                     serial_num = get_serial_number(cv2_img, character_model)
@@ -127,18 +135,21 @@ def extract_side_features(sides, labels, character_model):
 
 # /================= MODULE SELECTION / SCREENSHOTTING =================\
 
-def get_module_coords(module):
+def get_module_coords(module_index):
+    """
+    Get screen coordinates of a module based on module index.
+    """
     SW, SH = win_util.get_screen_size()
     start_x = SW * 0.35
     start_y = SH * 0.35
     offset_x = 300
     offset_y = 300
-    x = int(start_x + ((module % 3) * offset_x))
-    y = int(start_y + ((module // 3) * offset_y))
+    x = int(start_x + ((module_index % 3) * offset_x))
+    y = int(start_y + ((module_index // 3) * offset_y))
     return x, y
 
-def select_module(module):
-    x, y = get_module_coords(module)
+def select_module(module_index):
+    x, y = get_module_coords(module_index)
     win_util.click(x, y)
     sleep(1)
 
@@ -200,12 +211,13 @@ def solve_simon(image, mod_pos, side_features):
     mod_x, mod_y = mod_pos
     num = 1
     while not simon_solver.is_solved(image):
-        btn_coords = simon_solver.solve(image, screenshot_module, side_features, num)
+        btn_coords = simon_solver.solve(screenshot_module, side_features, num)
         for coords in btn_coords:
             button_y, button_x = coords
             win_util.click(mod_x + button_x, mod_y + button_y)
             sleep(0.5)
         num += 1
+        sleep(0.5)
         SC, _, _ = screenshot_module()
         image = convert_to_cv2(SC)
 
@@ -299,7 +311,8 @@ def solve_memory(image, char_model, mod_pos):
         win_util.click(x + mod_x, y + mod_y)
         if i < 4:
             sleep(3.5)
-        image = convert_to_cv2(screenshot_module()[0])
+        new_sc = screenshot_module()[0]
+        image = convert_to_cv2(new_sc)
 
 def solve_whos_on_first(image, char_model, mod_pos):
     mod_x, mod_y = mod_pos
@@ -309,7 +322,8 @@ def solve_whos_on_first(image, char_model, mod_pos):
         win_util.click(x + mod_x, y + mod_y)
         if i < 2:
             sleep(3.5)
-        image = convert_to_cv2(screenshot_module()[0])
+        sc = screenshot_module()[0]
+        image = convert_to_cv2(sc)
 
 # /========================= NEEDY MODULES =========================\
 
@@ -344,6 +358,11 @@ def solve_needy_knob(image, mod_pos):
         sleep(0.3)
 
 def needy_modules_critical(needy_modules, time_started, mod_duration):
+    """
+    Simplified function for figuring out whether we should solve
+    needy modules, or if we can wait a bit. This method is not
+    particularly accurate, but plays it safe, so we don't blow up.
+    """
     if needy_modules == 0:
         return False
     time_spent = get_time_spent(time_started) + mod_duration
@@ -403,15 +422,17 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
 # /======================= SOLVE ALL MODULES =======================\
 
 def solve_modules(modules, side_features, character_model, symbol_model, duration):
-    dont_solve = []
+    # Get list of indexes of needy modules (all modules an index over 19).
     needy_indices = list(filter(lambda i: modules[i] > 19, [x for x in range(len(modules))]))
     needy_timestamp = duration[0]
-    module_durations = [2, 5, 2, 12, 10, 2, 14, 8, 8, 8, 25]
+    module_durations = [2, 5, 2, 12, 10, 2, 14, 8, 8, 8, 20]
     log(f"Needy modules: {len(needy_indices)}", config.LOG_DEBUG)
 
     solved_modules = 0
     num_modules = len(list(filter(lambda x: 8 < x < 20, modules)))
-    for module, label in enumerate(modules):
+    module = 0
+    while module < len(modules):
+        label = modules[module]
         LIGHT_MONITOR.wait_for_light() # If the room is dark, wait for light.
         mod_index = module if module < 6 else module - 6
         bomb_solved = solved_modules == num_modules
@@ -430,43 +451,52 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             mod_name = module_classifier.LABELS[label]
             log(f"Solving {mod_name}...")
             try:
-                if label == 9 and label not in dont_solve: # Wires.
+                if label == 9: # Wires.
                     solve_wires(cv2_img, mod_pos, side_features)
-                elif label == 10 and label not in dont_solve: # Button.
+                elif label == 10: # Button.
                     solve_button(cv2_img, mod_pos, side_features, character_model, duration)
-                elif label == 11 and label not in dont_solve: # Symbols.
+                elif label == 11: # Symbols.
                     solve_symbols(cv2_img, mod_pos, symbol_model)
-                elif label == 12 and label not in dont_solve: # Simon Says.
+                elif label == 12: # Simon Says.
                     solve_simon(cv2_img, mod_pos, side_features)
-                elif label == 13 and label not in dont_solve: # Wire Sequence.
+                elif label == 13: # Wire Sequence.
                     solve_wire_sequence(cv2_img, mod_pos)
-                elif label == 14 and label not in dont_solve: # Complicated Wires.
+                elif label == 14: # Complicated Wires.
                     solve_complicated_wires(cv2_img, mod_pos, side_features)
-                elif label == 15 and label not in dont_solve: # Memory Game.
+                elif label == 15: # Memory Game.
                     solve_memory(cv2_img, character_model, mod_pos)
-                elif label == 16 and label not in dont_solve: # Who's on First?
+                elif label == 16: # Who's on First?
                     solve_whos_on_first(cv2_img, character_model, mod_pos)
-                elif label == 17 and label not in dont_solve: # Maze.
+                elif label == 17: # Maze.
                     solve_maze(cv2_img, mod_pos)
-                elif label == 18 and label not in dont_solve: # Password.
+                elif label == 18: # Password.
                     solve_password(cv2_img, character_model, mod_pos)
-                elif label == 19 and label not in dont_solve: # Morse.
+                elif label == 19: # Morse.
                     solve_morse(cv2_img, mod_pos)
                 solved_modules += 1
             except KeyboardInterrupt: # Bomb 'sploded.
                 handle_module_exception(mod_name, cv2_img)
                 raise KeyboardInterrupt
             except Exception:
+                # If an exception happened while lights were off, we try again.
+                if not LIGHT_MONITOR.lights_on:
+                    log("Exception while light was off. We try again in a bit!")
+                    deselect_module()
+                    continue
                 handle_module_exception(mod_name, cv2_img)
+
             sleep(0.1)
             deselect_module()
-        if module == 5 and num_modules > 5:
+
+        if module == 5 and solved_modules != num_modules:
             # We have gone through all modules on one side of the bomb, flip it over and continue.
             SW, SH = win_util.get_screen_size()
             inspect_bomb.flip_bomb(SW, SH)
             sleep(0.75)
             win_util.mouse_up(SW // 2, SH // 2, btn="right")
             sleep(0.5)
+
+        module += 1
     if solved_modules == num_modules:
         log("We did it! We live to defuse another bomb!")
     else:
@@ -478,23 +508,24 @@ def add_overlay_properties(key, value):
         OVERLAY_CONN.send((key, value))
 
 def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modules):
-    LIGHT_MONITOR.start()
-
-    time_started = time() # Time started is used for solving the button module.
+    time_started = time() + 2 # Time started is used for solving the button module.
 
     log("Inspecting bomb...")
 
-    images = inspect_bomb.inspect_bomb(num_modules) # Capture images of all sides of the bomb.
+    inspect_both_sides = True#num_modules > 5 or num_modules == 3
+
+    images = inspect_bomb.inspect_bomb(inspect_both_sides) # Capture images of all sides of the bomb.
     side_partitions = inspect_bomb.partition_sides(images) # Split images into modules/side of bomb.
+
     # Identify features from the side of the bomb (indicators, batteries, serial number, etc.).
     predictions = identify_side_features(side_partitions, module_model)
 
-    modules = 12 if num_modules > 5 else 6
+    modules = 12 if inspect_both_sides else 6
 
-    sw, sh = win_util.get_screen_size()
     #add_overlay_properties("module_positions", [get_module_coords(x) for x in range(6)])
-    add_overlay_properties("module_names", [module_classifier.LABELS[x]
-                                            for x in predictions[:modules]])
+    add_overlay_properties(
+        "module_names", [module_classifier.LABELS[x] for x in predictions[:modules]]
+    )
 
     # Extract aforementioned features (read serial number, count num. of batteries, etc.).
     side_features = extract_side_features(side_partitions[1:], predictions[modules:], char_model)
@@ -504,19 +535,20 @@ def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modu
 
     try:
         # Solve all modules. Back of the bomb first, from left to right, top to bottom.
-        solve_modules(predictions[:modules], side_features, char_model,
-                      symbol_model, (time_started, minutes, seconds))
+        solve_modules(
+            predictions[:modules], side_features, char_model,
+            symbol_model, (time_started, minutes, seconds)
+        )
     except KeyboardInterrupt: # Catch SIGINT from LightMonitor (meaning the bomb exploded).
         log("Exiting...")
-        exit(0)
-
-    LIGHT_MONITOR.shut_down()
+    finally:
+        LIGHT_MONITOR.shut_down()
 
 if __name__ == "__main__":
     config.MAX_GPU_FRACTION = 0.2 # Limit Neural Network classifier GPU usage.
 
-    if "record" in argv: # Create GUI overlay.
-        OVERLAY_CONN = overlay_init()
+    #if "record" in argv: # Create GUI overlay.
+    #    OVERLAY_CONN = overlay_init()
 
     log("Loading classifier models...")
     # Load model for classifying modules.
@@ -555,6 +587,8 @@ if __name__ == "__main__":
 
         SECONDS = 0
         MINUTES = 5
+
+        LIGHT_MONITOR.start()
 
         if "skip" not in argv:
             # Extract bomb duration from description of bomb in main menu.

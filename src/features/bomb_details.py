@@ -13,6 +13,7 @@ from model.grab_img import screenshot
 def get_threshold(img):
     gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
     thresh = cv2.threshold(gray, 50, 255, cv2.THRESH_BINARY_INV)[1]
+
     opening = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, np.ones((2, 2), dtype="uint8"), iterations=1)
     return opening
 
@@ -34,7 +35,7 @@ def largest_bounding_rect(contours):
     return (min_x, min_y, max_x, max_y)
 
 def get_masked_images(image):
-    contours = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)[1]
+    contours = cv2.findContours(image, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_TC89_L1)[0]
     contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c)))
     mask = np.zeros(image.shape[:2], dtype="uint8")
     masks = []
@@ -85,7 +86,7 @@ def fix_number(val):
     for c in val:
         if c == "i":
             result += "1"
-        if c == "b":
+        elif c == "b":
             result += "8"
         else:
             result += c
@@ -113,7 +114,7 @@ def get_details_async(model, holder):
     best_pred = classifier_util.get_best_prediction(prediction)
     labels = [classifier.LABELS[p] for p in best_pred]
     holder.append(format_time(labels[:3]))
-    holder.append(fix_number(labels[3:]))
+    holder.append(fix_number(labels[3:5]))
 
 def get_bomb_details(model, storing_list):
     Thread(target=get_details_async, args=(model, storing_list)).start()

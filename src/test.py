@@ -1,20 +1,10 @@
-if __name__ == "__main__":
-    from time import time, sleep
-    import view.overlay
+import cv2
 
-    conn = view.overlay.initialize()
+from solvers import compl_wires_solver
 
-    conn.send(("active", True))
-
-    conn.send(("speedrun_splits", [("first_bomb", 30)]))
-    conn.send(("speedrun_splits", [("first_bomb", 30), ("one_step_up", 45)]))
-    conn.send(("speedrun_splits", [("first_bomb", 30), ("one_step_up", 45), ("new_old", 100)]))
-    conn.send(("module_selected", (825, 388, 4)))
-    conn.send(("module_info", (17, "MAZE_2")))
-    conn.send(("log", ["Some data", "Some more data", "EVEN more data"]))
-
-    try:
-        while True:
-            sleep(0.5)
-    except KeyboardInterrupt:
-        conn.send(("active", False))
+img = cv2.imread("../resources/misc/error_imgs/62.png", cv2.IMREAD_COLOR)
+test_features = {
+    "batteries": 4, "parallel_port": True, "serial_number": "LV3CZ2",
+    "last_serial_odd": False, "contains_wovel": False
+}
+print(compl_wires_solver.solve(img, test_features))

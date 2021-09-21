@@ -8,7 +8,7 @@ def get_threshold(img):
     return thresh
 
 def segment_image(img):
-    contours = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+    contours = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[0]
     filtered_contours = []
     for c in contours:
         area = cv2.contourArea(c)

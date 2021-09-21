@@ -45,7 +45,7 @@ def largest_bounding_rect(contours):
 
 def get_segmented_image(image):
     thresh, bbox = get_threshold(image)
-    contours = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+    contours = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[0]
 
     return thresh, contours, bbox
 

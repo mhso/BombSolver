@@ -1,23 +1,25 @@
 import os
-from keras.layers import Conv2D, BatchNormalization
-from keras.backend.tensorflow_backend import set_session, clear_session
-from keras.regularizers import l2
-from keras.models import save_model
-from keras.layers import LeakyReLU
+from tensorflow.keras.layers import Conv2D, BatchNormalization
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.models import save_model
+from tensorflow.keras.layers import LeakyReLU
 import tensorflow as tf
 from numpy import argmax
 import config
 
-def get_nn_config():
+def set_nn_config():
     # Config options, to stop TF from eating all GPU memory.
-    nn_config = tf.ConfigProto()
-    nn_config.gpu_options.per_process_gpu_memory_fraction = config.MAX_GPU_FRACTION
-    nn_config.gpu_options.allow_growth = True
-    return tf.Session(config=nn_config)
+    gpus = tf.config.list_physical_devices("GPU")
+    max_memory = config.GPU_MEMORY * config.MAX_GPU_FRACTION
+    tf.config.experimental.set_virtual_device_configuration(
+        gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=max_memory)]
+    )
 
 def conv_layer(prev, filters, kernel_size, regularizer_const):
-    conv = Conv2D(filters, kernel_size=(kernel_size, kernel_size), strides=1, padding="same",
-                  kernel_regularizer=l2(regularizer_const))(prev)
+    conv = Conv2D(
+        filters, kernel_size=(kernel_size, kernel_size), strides=1, padding="same",
+        kernel_regularizer=l2(regularizer_const)
+    )(prev)
     conv = BatchNormalization()(conv)
     conv = LeakyReLU()(conv)
     return conv

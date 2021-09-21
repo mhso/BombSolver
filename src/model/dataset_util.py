@@ -54,15 +54,24 @@ def extract_test_data(images, labels, output_dim, cases_per_label):
         while label == curr_label-1 and end_of_label < labels.shape[0]:
             label = np.where(labels[end_of_label] == 1)[0]
             end_of_label += 1
-        rand_indices = np.random.choice([x for x in range(i+1, end_of_label)], size=cases_per_label)
+
+        index_choices = [x for x in range(i+1, end_of_label)]
+        rand_indices = []
+        for _ in range(cases_per_label):
+            rand_indices.append(index_choices.pop(np.random.randint(len(index_choices))))
+
         test_labels.extend(labels[r_i] for r_i in rand_indices)
         test_images.extend(images[r_i] for r_i in rand_indices)
         indexes.extend([r_i for r_i in rand_indices])
+
     for index in reversed(indexes):
         train_images.pop(index)
         train_labels.pop(index)
-    return (np.array(train_images), np.array(train_labels),
-            np.array(test_images), np.array(test_labels))
+
+    return (
+        np.array(train_images), np.array(train_labels),
+        np.array(test_images), np.array(test_labels)
+    )
 
 def load_dataset(path, label_names, data_dims, tests_per_label=4):
     input_dim, output_dim = data_dims

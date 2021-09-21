@@ -5,6 +5,8 @@ import features.util as features_util
 import config
 from debug import log, LOG_DEBUG
 
+COLOR = Enum("Colors", {"Blue": 0, "White": 1, "Red": 2, "Both": 3})
+
 def get_stars(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     coords = [
@@ -33,11 +35,10 @@ def get_lights(rgb):
 
 def get_wire_colors(img, coords):
     wires = [-1] * 6
-    radius = 5
-    Color = Enum("Colors", {"Blue":0, "White":1, "Red":2, "Both":3})
+    radius = 9
     colors = config.WIRE_COLOR_RANGE[2:]
     rgb = features_util.split_channels(img)
-    color_threshold = 5
+    color_threshold = 6
     for i, (y, x) in enumerate(coords):
         valid_colors = [0] * len(colors)
         for k, (lo, hi) in enumerate(colors):
@@ -46,33 +47,32 @@ def get_wire_colors(img, coords):
                     if features_util.color_in_range((m, n), rgb, lo, hi):
                         if valid_colors[k] < color_threshold:
                             valid_colors[k] += 1
-        if valid_colors[Color.Blue.value] == color_threshold:
-            if valid_colors[Color.Red.value] == color_threshold:
-                wires[i] = Color.Both.value # Both colors.
+        if valid_colors[COLOR.Blue.value] == color_threshold:
+            if valid_colors[COLOR.Red.value] == color_threshold:
+                wires[i] = COLOR.Both.value # Both colors.
             else:
-                wires[i] = Color.Blue.value
-        elif valid_colors[Color.Red.value] == color_threshold:
-            wires[i] = Color.Red.value
-        elif valid_colors[Color.White.value] == color_threshold:
-            wires[i] = Color.White.value
+                wires[i] = COLOR.Blue.value
+        elif valid_colors[COLOR.Red.value] == color_threshold:
+            wires[i] = COLOR.Red.value
+        elif valid_colors[COLOR.White.value] == color_threshold:
+            wires[i] = COLOR.White.value
     return wires
 
 def get_wire_label(has_star, is_lit, color):
-    Color = Enum("Colors", {"Blue":0, "White":1, "Red":2, "Both":3})
-    if color > Color.White.value: # Color is either Blue + Red or just Red.
-        if color == Color.Both.value: # Blue + Red.
+    if color > COLOR.White.value: # Color is either Blue + Red or just Red.
+        if color == COLOR.Both.value: # Wire is Blue and Red.
             if has_star:
                 if not is_lit:
                     return "P"
             return "S"
-        if has_star: # Color is just Red.
+        if has_star: # Wire is just Red.
             if is_lit:
                 return "B"
             return "C"
         if is_lit:
             return "B"
         return "S"
-    if color == Color.Blue.value:
+    if color == COLOR.Blue.value: # Wire is just Blue.
         if has_star:
             if is_lit:
                 return "P"
@@ -89,13 +89,13 @@ def get_wire_label(has_star, is_lit, color):
     return "C"
 
 def parse_label(label, features):
-    if label == "C":
+    if label == "C": # Cut always.
         return True
-    if label == "S":
+    if label == "S": # Cut if last digit of serial is odd.
         return not features["last_serial_odd"]
-    if label == "P":
+    if label == "P": # Cut if bomb has a parallel port.
         return features["parallel_port"]
-    if label == "B":
+    if label == "B": # Cut if bomb has 2 or more batteries.
         return features["batteries"] >= 2
     return False
 

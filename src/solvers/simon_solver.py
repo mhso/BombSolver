@@ -33,7 +33,7 @@ def get_response_color(color, features):
             return 0 # Press red.
     return -1
 
-def get_next_color(img, sc_func, ranges, features, curr_match):
+def get_next_color(sc_func, ranges, features, curr_match):
     coords = [(140, 95), (74, 155), (204, 156), (140, 216)]
     colors = ["Red", "Blue", "Green", "Yellow"]
     button_coords = []
@@ -55,7 +55,7 @@ def get_next_color(img, sc_func, ranges, features, curr_match):
                     return button_coords
         sleep(0.1) # Lamps are lit for 0.25 seconds.
 
-def solve(image, screenshot_func, features, color_num=1):
+def solve(screenshot_func, features, color_num=1):
     ranges = config.SIMON_COLOR_RANGE
-    coords = get_next_color(image, screenshot_func, ranges, features, color_num)
+    coords = get_next_color(screenshot_func, ranges, features, color_num)
     return coords

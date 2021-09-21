@@ -45,7 +45,7 @@ def repair_gaps(img):
     return img
 
 def get_masked_images(img, x_dist):
-    contours = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+    contours = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[0]
     # Sort contours by x value.
     contours.sort(key=lambda c: features_util.mid_bbox(cv2.boundingRect(c))[0])
 

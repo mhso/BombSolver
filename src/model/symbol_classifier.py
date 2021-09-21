@@ -1,9 +1,8 @@
-import keras
-from keras.layers import Dense, Dropout, Flatten, Input
-from keras.layers import MaxPooling2D
-from keras.models import Model, load_model
-from keras.optimizers import SGD
-from tensorflow import Graph
+import tensorflow.keras as keras
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Input
+from tensorflow.keras.layers import MaxPooling2D
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.optimizers import SGD
 import config
 import model.classifier_util as utils
 
@@ -54,8 +53,7 @@ VALIDATION_SPLIT = 0.3
 TESTS_PER_LABEL = 2
 
 def build_model():
-    sess = utils.get_nn_config()
-    graph = Graph()
+    utils.set_nn_config()
     inp = Input(config.SYMBOLS_INPUT_DIM)
 
     layer = utils.conv_layer(inp, CONV_FILTERS, KERNEL_SIZE, REGULARIZER_CONST)
@@ -72,20 +70,21 @@ def build_model():
     model = Model(inputs=inp, outputs=out)
 
     compile_model(model)
-    model._make_predict_function()
 
-    return model, graph, sess
+    return model
 
 def compile_model(model):
-    model.compile(loss=keras.losses.categorical_crossentropy,
-                  optimizer=SGD(lr=LEARNING_RATE,
-                                decay=WEIGHT_DECAY,
-                                momentum=MOMENTUM),
-                  metrics=['accuracy'])
+    model.compile(
+        loss=keras.losses.categorical_crossentropy,
+        optimizer=SGD(learning_rate=LEARNING_RATE, decay=WEIGHT_DECAY, momentum=MOMENTUM),
+        metrics=['accuracy']
+    )
 
 def train(model, inputs, expected_out):
-    result = model.fit(inputs, expected_out, batch_size=BATCH_SIZE,
-                       epochs=EPOCHS_PER_BATCH, verbose=0)
+    result = model.fit(
+        inputs, expected_out, batch_size=BATCH_SIZE,
+        epochs=EPOCHS_PER_BATCH, verbose=0
+    )
     return result.history
 
 def evaluate(model, inputs, expected_out):
@@ -93,14 +92,10 @@ def evaluate(model, inputs, expected_out):
     return (score[0], score[1])
 
 def load_from_file(filename):
-    graph = Graph()
-    with graph.as_default():
-        sess = utils.get_nn_config()
-        with sess.as_default():
-            model = load_model(filename, compile=False)
-            compile_model(model)
-            return model, graph, sess
-    return None
+    utils.set_nn_config()
+    model = load_model(filename, compile=False)
+    compile_model(model)
+    return model
 
 def shape_input(inp):
     reshaped = inp
@@ -109,6 +104,4 @@ def shape_input(inp):
     return reshaped
 
 def predict(model, inp):
-    with model[1].as_default():
-        with model[2].as_default():
-            return model[0].predict(shape_input(inp))
+    return model.predict(shape_input(inp))

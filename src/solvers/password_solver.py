@@ -57,5 +57,6 @@ def solve(img, model, sc_func, click_func):
             attempted_words[attemp_prefix] += 1
         get_next_char(index-1, click_func)
         sc = sc_func()[0]
+
         img = features_util.convert_to_cv2(sc)
     return False

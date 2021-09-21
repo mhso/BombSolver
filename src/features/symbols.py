@@ -1,7 +1,9 @@
 import numpy as np
-from model import (dataset_util,
-                   symbol_classifier as classifier,
-                   classifier_util)
+from model import (
+    dataset_util,
+    symbol_classifier as classifier,
+    classifier_util
+)
 import features.util as features_util
 import cv2
 import config
@@ -33,7 +35,7 @@ def crop_to_symbol(img):
     return img[min_y:max_y, min_x:max_x]
 
 def segment_image(img):
-    contours = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[1]
+    contours = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[0]
     min_y = 10000
     min_cont = -1
     for i, cont in enumerate(contours):
