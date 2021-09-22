@@ -61,12 +61,3 @@ def get_dial_orientation(img):
         if features_util.color_in_range((int(y), int(x)), rgb, red_min, red_max):
             return i
     return -1
-
-def test_with(img):
-    threshes = get_directions(img)
-    for thresh in threshes:
-        cv2.imshow("Test", thresh)
-        key = cv2.waitKey(0)
-        if key == ord('q'):
-            return
-        cv2.destroyWindow("Test")

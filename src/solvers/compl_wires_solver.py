@@ -8,6 +8,9 @@ from debug import log, LOG_DEBUG
 COLOR = Enum("Colors", {"Blue": 0, "White": 1, "Red": 2, "Both": 3})
 
 def get_stars(img):
+    """
+    Return a boolean list that describes whether each wire has a star label or not.
+    """
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     coords = [
         (244, 51), (244, 88), (243, 123),
@@ -22,6 +25,9 @@ def get_stars(img):
     return stars
 
 def get_lights(rgb):
+    """
+    Return a boolean list that describes whether each wire has a lit LED or not.
+    """
     coords = (52, 80, 110, 142, 172, 200)
     y = 43
     lit_lo = (200, 200, 150)
@@ -34,27 +40,33 @@ def get_lights(rgb):
     return lights
 
 def get_wire_colors(img, coords):
+    """
+    Get a list of colors for each wire. Colors can be either:
+    -1 (no wire), 0 (blue), 1 (white), 2 (red), or 3 (blue + red).
+    """
     wires = [-1] * 6
-    radius = 9
     colors = config.WIRE_COLOR_RANGE[2:]
     rgb = features_util.split_channels(img)
+    # Radius around each wire pixel to search for colors.
+    search_radius = 9
+    # Minimum threshold for number of pixels to be of a specific color.
     color_threshold = 6
-    for i, (y, x) in enumerate(coords):
-        valid_colors = [0] * len(colors)
-        for k, (lo, hi) in enumerate(colors):
-            for m in range(y-radius, y+radius):
-                for n in range(x-radius, x+radius):
+    for i, (y, x) in enumerate(coords): # Look through each wire pixel.
+        valid_colors = [0] * len(colors) # Track occurences of each color.
+        for k, (lo, hi) in enumerate(colors): # Look through possible colors.
+            for m in range(y-search_radius, y+search_radius): # Look in a radius around a pixel.
+                for n in range(x-search_radius, x+search_radius):
                     if features_util.color_in_range((m, n), rgb, lo, hi):
                         if valid_colors[k] < color_threshold:
                             valid_colors[k] += 1
-        if valid_colors[COLOR.Blue.value] == color_threshold:
-            if valid_colors[COLOR.Red.value] == color_threshold:
+        if valid_colors[COLOR.Blue.value] == color_threshold: # Wire is blue.
+            if valid_colors[COLOR.Red.value] == color_threshold: # Wire is also red.
                 wires[i] = COLOR.Both.value # Both colors.
             else:
                 wires[i] = COLOR.Blue.value
-        elif valid_colors[COLOR.Red.value] == color_threshold:
+        elif valid_colors[COLOR.Red.value] == color_threshold: # Wire is just red.
             wires[i] = COLOR.Red.value
-        elif valid_colors[COLOR.White.value] == color_threshold:
+        elif valid_colors[COLOR.White.value] == color_threshold: # Wire is white.
             wires[i] = COLOR.White.value
     return wires
 
@@ -62,7 +74,9 @@ def get_wire_label(has_star, is_lit, color):
     if color > COLOR.White.value: # Color is either Blue + Red or just Red.
         if color == COLOR.Both.value: # Wire is Blue and Red.
             if has_star:
-                if not is_lit:
+                if is_lit:
+                    return "D"
+                else:
                     return "P"
             return "S"
         if has_star: # Wire is just Red.
@@ -100,6 +114,9 @@ def parse_label(label, features):
     return False
 
 def desc_wires(wires, stars, lights):
+    """
+    Provide a description of each wire (used for prints/debugging).
+    """
     descriptions = []
     colors = ["Blue", "White", "Red", "Both"]
     for wire, star, light in zip(wires, stars, lights):
@@ -132,7 +149,10 @@ def solve(img, features):
         if wire == -1:
             wires_to_cut.append(False)
             continue
+        # Get label from Venn Diagram,
+        # based on the color of the wire and whether it has a star or lit LED.
         solve_label = get_wire_label(star, light, wire)
+        # Determine whether to cut the wire, based on label and other bomb features.
         wires_to_cut.append(parse_label(solve_label, features))
     log(f"Wires to cut: {wires_to_cut}", LOG_DEBUG, "Complicated Wires")
     return wires_to_cut, wire_coords

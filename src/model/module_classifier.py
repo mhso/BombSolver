@@ -36,9 +36,10 @@ LABELS = [
 
 # Layer constants.
 CONV_FILTERS = 32
+DENSE_UNITS = 292
 CONV_LAYERS = 4
-KERNEL_SIZE = 5
-USE_BIAS = False
+KERNEL_SIZE = 3
+USE_BIAS = True
 REGULARIZER_CONST = 0.001
 
 # Optimizer constants.
@@ -55,7 +56,7 @@ TESTS_PER_LABEL = 4
 def output_layer(prev):
     out = Flatten()(prev)
 
-    out = Dense(292, kernel_regularizer=l2(REGULARIZER_CONST),
+    out = Dense(DENSE_UNITS, kernel_regularizer=l2(REGULARIZER_CONST),
                 use_bias=USE_BIAS)(out)
 
     out = Dense(config.MODULE_OUTPUT_DIM, kernel_regularizer=l2(REGULARIZER_CONST),

@@ -22,26 +22,40 @@ def solve(img, features):
         (40, 70), (80, 74), (118, 74),
         (157, 74), (198, 70), (240, 72)
     ]
-    # Colords of wires.
+    # Colors of wires.
     color_ranges = config.WIRE_COLOR_RANGE
     Colors = Enum("Colors", {"Black":0, "Yellow":1, "Blue":2, "White":3, "Red":4})
     num_wires = 0
     color_hist = [0, 0, 0, 0, 0] # Histogram of color occurences.
     wire_colors = [-1, -1, -1, -1, -1, -1] # Color of each wire. -1 means wire is missing.
     rgb = features_util.split_channels(img)
+    radius = 5
 
     # Look through coordinates for each wire and check if a color matches that pixel.
     for i, coord in enumerate(coords):
-        for j, (low, high) in enumerate(color_ranges):
-            if features_util.color_in_range(coord, rgb, low, high):
-                color_hist[j] += 1
-                wire_colors[i] = j
-                num_wires += 1
-                log(f"Wire {i+1} is {Colors(j)}", LOG_DEBUG, "Wires")
-                break
+        valid_colors = [0] * len(color_ranges)
+        max_color_index = 0
+        max_color_count = 0
+
+        for j, (low, high) in enumerate(color_ranges): # Run through each possible color range.
+            for m in range(coord[0]-radius, coord[0]+radius): # Look in a 5px radius around pixel.
+                for n in range(coord[1]-radius, coord[1]+radius):
+                    if features_util.color_in_range((m, n), rgb, low, high): # Color detected.
+                        valid_colors[j] += 1 # Record occurence of current color.
+                        if valid_colors[j] > max_color_count: # Track most seen color.
+                            max_color_count = valid_colors[j]
+                            max_color_index = j
+
+        if max_color_count > 10: # Assume no wire is present if too few pixels matched a color.
+            color_hist[max_color_index] += 1 # Record occurence of wire color.
+            wire_colors[i] = max_color_index # Record what color the ith wire is.
+            num_wires += 1
+            log(f"Wire {i+1} is {Colors(max_color_index)}", LOG_DEBUG, "Wires")
 
     serial_odd = features.get("last_serial_odd", None)
     if num_wires > 3 and serial_odd is None:
+        # Serial number was not previous detected correctly.
+        # If we depend on this info to solve wires, raise an error.
         log("WARNING: Serial number information not provided", LOG_WARNING, "Wires")
         raise ValueError
 

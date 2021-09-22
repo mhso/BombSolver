@@ -20,6 +20,9 @@ MAX_GPU_FRACTION = 0.4
 SERIAL_MIN_RED = (110, 0, 0)
 SERIAL_MAX_RED = (255, 99, 71)
 
+DISCHARGE_MIN_RED = (200, 0, 0)
+DISCHARGE_MAX_RED = (255, 50, 50)
+
 WIRE_COLOR_RANGE = [
     ((0, 0, 0), (25, 25, 25)), # Black.
     ((190, 190, 0), (255, 255, 50)), # Yellow.

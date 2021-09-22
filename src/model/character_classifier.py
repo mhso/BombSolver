@@ -10,6 +10,7 @@ LABELS = [str(x) for x in range(10)] + [chr(x) for x in range(97, 123)]
 
 # Layer constants.
 CONV_FILTERS = 32
+DENSE_UNITS = 512
 KERNEL_SIZE = 3
 REGULARIZER_CONST = 0.001
 
@@ -32,10 +33,10 @@ def build_model():
     layer = utils.conv_layer(layer, CONV_FILTERS*2, KERNEL_SIZE, REGULARIZER_CONST)
     layer = Dropout(0.25)(layer)
     layer = MaxPooling2D(pool_size=(2, 2), padding="same")(layer)
-    layer = Dense(512, activation='relu')(layer)
+    layer = Dense(DENSE_UNITS, activation='relu')(layer)
     layer = MaxPooling2D(pool_size=(2, 2), padding="same")(layer)
     layer = Flatten()(layer)
-    layer = Dense(256, activation='relu')(layer)
+    layer = Dense(DENSE_UNITS // 2, activation='relu')(layer)
     layer = Dropout(0.5)(layer)
     out = Dense(config.CHAR_OUTPUT_DIM, activation='softmax')(layer)
 

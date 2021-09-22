@@ -14,7 +14,8 @@ from model.grab_img import screenshot
 from solvers import (
     wire_solver, button_solver, symbols_solver, simon_solver,
     wire_seq_solver, compl_wires_solver, memory_solver, whos_first_solver,
-    maze_solver, password_solver, morse_solver, needy_vent_solver, needy_knob_solver
+    maze_solver, password_solver, morse_solver, needy_discharge_solver,
+    needy_vent_solver, needy_knob_solver
 )
 from features.serial_number import get_serial_number
 from features.bomb_details import get_bomb_details
@@ -336,18 +337,17 @@ def solve_needy_vent(image, mod_pos):
     button_y, button_x = needy_vent_solver.solve(image)
     win_util.click(button_x + mod_x, button_y + mod_y)
 
-def solve_needy_discharge(image, mod_pos, time_started):
+def solve_needy_discharge(image, mod_pos):
     if not needy_features.is_active(image):
         log("Needy Discharge is not active.", config.LOG_DEBUG, "Needy Discharge")
         return
     mod_x, mod_y = mod_pos
-    time_spent = get_time_spent(time_started)
+    time_to_drain = needy_discharge_solver.solve(image)
     x_top, y_top = mod_x + 230, mod_y + 92
 
     win_util.mouse_move(x_top, y_top)
     win_util.mouse_down(x_top, y_top)
-    sleep_time = 1 + (time_spent / 5)
-    sleep(sleep_time)
+    sleep(time_to_drain)
     win_util.mouse_up(x_top, y_top)
 
 def solve_needy_knob(image, mod_pos):
@@ -398,7 +398,7 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
             if label == 20: # Needy Vent Gas.
                 solve_needy_vent(cv2_img, mod_pos)
             elif label == 21: # Needy Discharge Capacitor.
-                solve_needy_discharge(cv2_img, mod_pos, duration)
+                solve_needy_discharge(cv2_img, mod_pos)
             elif label == 22: # Solve Knob.
                 solve_needy_knob(cv2_img, mod_pos)
         except KeyboardInterrupt:
@@ -602,6 +602,7 @@ if __name__ == "__main__":
                 add_overlay_properties("speedrun_time", SPEEDRUN_TIMESTAMP)
 
             log("Waiting for level to start...")
+            sleep(1)
             await_level_start() # Wait for level to load and bomb timer to start.
             MINUTES, SECONDS = holder[0]
             NUM_MODULES = holder[1]
