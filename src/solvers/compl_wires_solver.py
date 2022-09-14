@@ -18,10 +18,12 @@ def get_stars(img):
     ]
     radius = 8
     stars = [False] * 6
+
     for i, (y, x) in enumerate(coords):
         label = gray[y-radius:y+radius, x-radius:x+radius]
         if len(np.where(label < 70)[0]) > 50:
             stars[i] = True
+
     return stars
 
 def get_lights(rgb):
@@ -33,10 +35,12 @@ def get_lights(rgb):
     lit_lo = (200, 200, 150)
     lit_hi = (255, 255, 220)
     lights = [False] * 6
+
     for i, x in enumerate(coords):
         pixel = (y, x)
         if features_util.color_in_range(pixel, rgb, lit_lo, lit_hi):
             lights[i] = True
+
     return lights
 
 def get_wire_colors(img, coords):
@@ -47,27 +51,35 @@ def get_wire_colors(img, coords):
     wires = [-1] * 6
     colors = config.WIRE_COLOR_RANGE[2:]
     rgb = features_util.split_channels(img)
+
     # Radius around each wire pixel to search for colors.
     search_radius = 9
+
     # Minimum threshold for number of pixels to be of a specific color.
     color_threshold = 6
+
     for i, (y, x) in enumerate(coords): # Look through each wire pixel.
         valid_colors = [0] * len(colors) # Track occurences of each color.
+
         for k, (lo, hi) in enumerate(colors): # Look through possible colors.
             for m in range(y-search_radius, y+search_radius): # Look in a radius around a pixel.
                 for n in range(x-search_radius, x+search_radius):
                     if features_util.color_in_range((m, n), rgb, lo, hi):
                         if valid_colors[k] < color_threshold:
                             valid_colors[k] += 1
+
         if valid_colors[COLOR.Blue.value] == color_threshold: # Wire is blue.
             if valid_colors[COLOR.Red.value] == color_threshold: # Wire is also red.
                 wires[i] = COLOR.Both.value # Both colors.
             else:
                 wires[i] = COLOR.Blue.value
+
         elif valid_colors[COLOR.Red.value] == color_threshold: # Wire is just red.
             wires[i] = COLOR.Red.value
+
         elif valid_colors[COLOR.White.value] == color_threshold: # Wire is white.
             wires[i] = COLOR.White.value
+
     return wires
 
 def get_wire_label(has_star, is_lit, color):
@@ -78,28 +90,41 @@ def get_wire_label(has_star, is_lit, color):
                     return "D"
                 else:
                     return "P"
+    
             return "S"
+
         if has_star: # Wire is just Red.
             if is_lit:
                 return "B"
+
             return "C"
+
         if is_lit:
             return "B"
+
         return "S"
+
     if color == COLOR.Blue.value: # Wire is just Blue.
         if has_star:
             if is_lit:
                 return "P"
+
             return "D"
+
         if is_lit:
             return "P"
+
         return "S"
+
     if has_star:
         if is_lit:
             return "B"
+
         return "C"
+
     if is_lit:
         return "D"
+
     return "C"
 
 def parse_label(label, features):
@@ -133,6 +158,7 @@ def desc_wires(wires, stars, lights):
                     desc += " with star"
             desc += "."
             descriptions.append(desc)
+
     return descriptions
 
 def solve(img, features):
@@ -144,15 +170,19 @@ def solve(img, features):
     stars = get_stars(img)
     lights = get_lights(features_util.split_channels(img))
     log(desc_wires(wires, stars, lights), LOG_DEBUG, "Complicated Wires")
+
     wires_to_cut = []
+
     for (star, light, wire) in zip(stars, lights, wires):
         if wire == -1:
             wires_to_cut.append(False)
             continue
+
         # Get label from Venn Diagram,
         # based on the color of the wire and whether it has a star or lit LED.
         solve_label = get_wire_label(star, light, wire)
         # Determine whether to cut the wire, based on label and other bomb features.
         wires_to_cut.append(parse_label(solve_label, features))
+
     log(f"Wires to cut: {wires_to_cut}", LOG_DEBUG, "Complicated Wires")
     return wires_to_cut, wire_coords

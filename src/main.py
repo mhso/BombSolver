@@ -49,6 +49,7 @@ def await_level_start():
     Sleep until the given level has started (when the light is turned on).
     """
     LIGHT_MONITOR.wait_for_light()
+    sleep(1) # We wait an extra second for some modules on the bomb to 'unfold'.
 
 def identify_side_features(sides, model):
     flattened = []
@@ -188,6 +189,7 @@ def solve_wires(image, mod_pos, side_features):
     log(f"Cut wire at {result}", config.LOG_DEBUG)
     wire_y, wire_x = coords[result]
     win_util.click(mod_x + wire_x, mod_y + wire_y)
+    yield True
 
 def solve_button(image, mod_pos, side_features, character_model, duration):
     mod_x, mod_y = mod_pos
@@ -208,6 +210,7 @@ def solve_button(image, mod_pos, side_features, character_model, duration):
         release_time = button_solver.get_release_time(image, pixel)
         log(f"Release button at {release_time}", config.LOG_DEBUG, "Button")
         release_mouse_at(release_time, duration, button_x, button_y)
+    yield True
 
 def solve_simon(image, mod_pos, side_features):
     mod_x, mod_y = mod_pos
@@ -222,6 +225,8 @@ def solve_simon(image, mod_pos, side_features):
         sleep(0.5)
         SC, _, _ = screenshot_module()
         image = convert_to_cv2(SC)
+        yield False
+    yield True
 
 def solve_wire_sequence(image, mod_pos):
     mod_x, mod_y = mod_pos
@@ -238,6 +243,8 @@ def solve_wire_sequence(image, mod_pos):
         if i < 3:
             sleep(1.8)
         image = convert_to_cv2(screenshot_module()[0])
+        yield False
+    yield True
 
 def solve_complicated_wires(image, mod_pos, side_features):
     mod_x, mod_y = mod_pos
@@ -247,10 +254,14 @@ def solve_complicated_wires(image, mod_pos, side_features):
             y, x = coords[i]
             win_util.click(mod_x + x, mod_y + y)
             sleep(0.3)
+    yield True
 
 def solve_morse(image, mod_pos):
     mod_x, mod_y = mod_pos
-    presses, frequency = morse_solver.solve(image, screenshot_module)
+    for output in morse_solver.solve(image, screenshot_module):
+        yield False
+
+    presses, frequency = output
     log(f"Morse frequency: {frequency}.", config.LOG_DEBUG, "Morse")
     button_x, button_y = mod_x + 154, mod_y + 236
     inc_btn_x, inc_btn_y = mod_x + 240, mod_y + 170
@@ -258,6 +269,7 @@ def solve_morse(image, mod_pos):
         win_util.click(inc_btn_x, inc_btn_y)
         sleep(0.3)
     win_util.click(button_x, button_y)
+    yield True
 
 def solve_symbols(image, mod_pos, symbol_model):
     mod_x, mod_y = mod_pos
@@ -268,6 +280,7 @@ def solve_symbols(image, mod_pos, symbol_model):
     for y, x in coords:
         win_util.click(mod_x + x, mod_y + y)
         sleep(0.3)
+    yield True
 
 def solve_maze(image, mod_pos):
     mod_x, mod_y = mod_pos
@@ -290,20 +303,24 @@ def solve_maze(image, mod_pos):
         elif direction == E:
             win_util.click(right_x, right_y)
         sleep(0.3)
+    yield True
 
-def solve_password(image, char_model, mod_pos):
+def solve_password(image, mod_pos, char_model):
     mod_x, mod_y = mod_pos
     submit_x, submit_y = mod_x + 154, mod_y + 254
     # Use lambda function to translate 'image-local' clicks
     # from the password solver into 'screen-local' coordinates.
     click_func = lambda x, y: win_util.click(mod_x + x, mod_y + y)
-    success = password_solver.solve(image, char_model, screenshot_module, click_func)
+    for success in password_solver.solve(image, char_model, screenshot_module, click_func):
+        yield False
+
     if success:
         win_util.click(submit_x, submit_y)
     else:
         log(f"WARNING: Could not solve 'Password'.", config.LOG_WARNING)
+    yield True
 
-def solve_memory(image, char_model, mod_pos):
+def solve_memory(image, mod_pos, char_model):
     mod_x, mod_y = mod_pos
     history = []
     for i in range(5):
@@ -315,8 +332,10 @@ def solve_memory(image, char_model, mod_pos):
             sleep(3.5)
         new_sc = screenshot_module()[0]
         image = convert_to_cv2(new_sc)
+        yield False
+    yield True
 
-def solve_whos_on_first(image, char_model, mod_pos):
+def solve_whos_on_first(image, mod_pos, char_model):
     mod_x, mod_y = mod_pos
     for i in range(3):
         coords = whos_first_solver.solve(image, char_model)
@@ -326,6 +345,8 @@ def solve_whos_on_first(image, char_model, mod_pos):
             sleep(3.5)
         sc = screenshot_module()[0]
         image = convert_to_cv2(sc)
+        yield False
+    yield True
 
 # /========================= NEEDY MODULES =========================\
 
@@ -358,26 +379,41 @@ def solve_needy_knob(image, mod_pos):
         win_util.click(dial_x, dial_y)
         sleep(0.3)
 
-def needy_modules_critical(needy_modules, time_started, mod_duration):
+def are_needy_modules_critical(bomb_state, log_timeleft=False):
     """
     Simplified function for figuring out whether we should solve
     needy modules, or if we can wait a bit. This method is not
     particularly accurate, but plays it safe, so we don't blow up.
     """
+    bomb_solved = bomb_state["solved_modules"] == bomb_state["num_modules"]
+    needy_timestamp = bomb_state.get("needy_timestamp")
+
+    if bomb_solved or needy_timestamp is None:
+        return False
+
+    needy_modules = len(bomb_state["needy_indices"])
+    label = bomb_state["label"]
+    mod_duration = 2 if label > 19 else bomb_state["module_durations"][label - 9]
+
     if needy_modules == 0:
         return False
-    time_spent = get_time_spent(time_started) + mod_duration
+    time_spent = get_time_spent(needy_timestamp) + mod_duration
     needy_duration = 40 # Duration before a needy module explodes.
-    time_to_solve = 4 # Approx. time required to solve a needy module.
+    time_to_solve = 6 # Approx. time required to solve a needy module.
     threshold = needy_modules * time_to_solve
     timeleft = needy_duration - time_spent
-    flavor_str = f"in: {(timeleft - threshold):.1f}s" if timeleft >= threshold else "now!"
-    log(f"Need to solve needy modules {flavor_str}", config.LOG_DEBUG)
+    if log_timeleft or timeleft < threshold:
+        flavor_str = f"in: {(timeleft - threshold):.1f}s" if timeleft >= threshold else "now!"
+        log(f"Need to solve needy modules {flavor_str}", config.LOG_DEBUG)
     return timeleft < threshold
 
-def solve_needy_modules(modules, needy_indices, curr_module, duration):
+def solve_needy_modules(bomb_state):
+    module = bomb_state["module"]
+    modules = bomb_state["modules"]
+    needy_indices = bomb_state["needy_indices"]
+
     SW, SH = win_util.get_screen_size()
-    prev_index = curr_module
+    prev_index = module
     timestamp = None
     for index in needy_indices:
         if (index > 5) ^ (prev_index > 5): # Flip the bomb, if needed.
@@ -413,7 +449,7 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
         deselect_module()
         prev_index = index
     # Flip the bomb back to it's original state, if needed.
-    if (curr_module > 5) ^ (prev_index > 5):
+    if (module > 5) ^ (prev_index > 5):
         inspect_bomb.flip_bomb(SW, SH)
         sleep(0.75)
         win_util.mouse_up(SW // 2, SH // 2, btn="right")
@@ -422,26 +458,55 @@ def solve_needy_modules(modules, needy_indices, curr_module, duration):
 
 # /======================= SOLVE ALL MODULES =======================\
 
+def solve_module(solver_func, solver_args, bomb_state):
+    """
+    Call solver func in incremental steps. Pause and solve needy modules if necessary.
+    """
+    for is_module_solved in solver_func(*solver_args):
+        if not is_module_solved and are_needy_modules_critical(bomb_state):
+            deselect_module()
+            bomb_state["needy_timestamp"] = solve_needy_modules(bomb_state)
+            # If we solved a needy module, select current module again and continue solving it.
+            module = bomb_state["module"]
+            mod_index = module if module < 6 else module - 6
+            select_module(mod_index)
+    return bomb_state
+
 def solve_modules(modules, side_features, character_model, symbol_model, duration):
     # Get list of indexes of needy modules (all modules an index over 19).
     needy_indices = list(filter(lambda i: modules[i] > 19, [x for x in range(len(modules))]))
-    needy_timestamp = duration[0]
-    module_durations = [2, 5, 2, 12, 10, 2, 14, 8, 8, 8, 20]
+    module_durations = [2 for _ in range(11)]#[2, 5, 2, 12, 10, 2, 14, 8, 8, 8, 20]
+    module_durations[-1] = 20
+
+    module_solvers = [
+        solve_wires, solve_button, solve_symbols, solve_simon,
+        solve_wire_sequence, solve_complicated_wires, solve_memory,
+        solve_whos_on_first, solve_maze, solve_password, solve_morse
+    ]
     log(f"Needy modules: {len(needy_indices)}", config.LOG_DEBUG)
 
-    solved_modules = 0
     num_modules = len(list(filter(lambda x: 8 < x < 20, modules)))
+
+    bomb_state = {
+        "modules": modules, "needy_indices": needy_indices,
+        "num_modules": num_modules, "solved_modules": 0,
+        "module_durations": module_durations
+    }
+
     module = 0
     while module < len(modules):
+        if module == 1: # Needy timer starts after first module has been solved.
+            bomb_state["needy_timestamp"] = time()
+
         label = modules[module]
         LIGHT_MONITOR.wait_for_light() # If the room is dark, wait for light.
         mod_index = module if module < 6 else module - 6
-        bomb_solved = solved_modules == num_modules
-        mod_duration = 2 if label > 19 else module_durations[label-9]
-        critical = needy_modules_critical(len(needy_indices), needy_timestamp, mod_duration)
-        if not bomb_solved and critical:
-            # Needy modules need attention! Solve them, and continue where we left off.
-            needy_timestamp = solve_needy_modules(modules, needy_indices, module, needy_timestamp)
+
+        bomb_state["module"] = module
+        bomb_state["label"] = label
+
+        if are_needy_modules_critical(bomb_state, log_timeleft=True):
+            bomb_state["needy_timestamp"] = solve_needy_modules(bomb_state)
 
         if 8 < label < 20:
             select_module(mod_index)
@@ -449,32 +514,22 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             #add_overlay_properties("module_selected", (x, y, mod_index))
             mod_pos = (x, y)
             cv2_img = convert_to_cv2(SC)
+
+            solver_args = [cv2_img, mod_pos]
+            if label in (9, 10, 12, 14): # Side features are required to solve module.
+                solver_args.append(side_features)
+            if label in (10, 15, 16, 18): # Character model is required to solve module.
+                solver_args.append(character_model)
+            if label == 10: # Timer info is needed to solve button module.
+                solver_args.append(duration)
+            elif label == 11: # Symbols classifier.
+                solver_args.append(symbol_model)
+
             mod_name = module_classifier.LABELS[label]
             log(f"Solving {mod_name}...")
             try:
-                if label == 9: # Wires.
-                    solve_wires(cv2_img, mod_pos, side_features)
-                elif label == 10: # Button.
-                    solve_button(cv2_img, mod_pos, side_features, character_model, duration)
-                elif label == 11: # Symbols.
-                    solve_symbols(cv2_img, mod_pos, symbol_model)
-                elif label == 12: # Simon Says.
-                    solve_simon(cv2_img, mod_pos, side_features)
-                elif label == 13: # Wire Sequence.
-                    solve_wire_sequence(cv2_img, mod_pos)
-                elif label == 14: # Complicated Wires.
-                    solve_complicated_wires(cv2_img, mod_pos, side_features)
-                elif label == 15: # Memory Game.
-                    solve_memory(cv2_img, character_model, mod_pos)
-                elif label == 16: # Who's on First?
-                    solve_whos_on_first(cv2_img, character_model, mod_pos)
-                elif label == 17: # Maze.
-                    solve_maze(cv2_img, mod_pos)
-                elif label == 18: # Password.
-                    solve_password(cv2_img, character_model, mod_pos)
-                elif label == 19: # Morse.
-                    solve_morse(cv2_img, mod_pos)
-                solved_modules += 1
+                bomb_state = solve_module(module_solvers[label-9], solver_args, bomb_state)
+                bomb_state["solved_modules"] += 1
             except KeyboardInterrupt: # Bomb 'sploded.
                 handle_module_exception(mod_name, cv2_img)
                 raise KeyboardInterrupt
@@ -489,7 +544,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             sleep(0.1)
             deselect_module()
 
-        if module == 5 and solved_modules != num_modules:
+        if module == 5 and bomb_state["solved_modules"] != num_modules:
             # We have gone through all modules on one side of the bomb, flip it over and continue.
             SW, SH = win_util.get_screen_size()
             inspect_bomb.flip_bomb(SW, SH)
@@ -498,7 +553,7 @@ def solve_modules(modules, side_features, character_model, symbol_model, duratio
             sleep(0.5)
 
         module += 1
-    if solved_modules == num_modules:
+    if bomb_state["solved_modules"] == num_modules:
         log("We did it! We live to defuse another bomb!")
     else:
         log("Some modules could not be disarmed, it seems we are doomed...")
@@ -509,7 +564,7 @@ def add_overlay_properties(key, value):
         OVERLAY_CONN.send((key, value))
 
 def run_level(module_model, char_model, symbol_model, minutes, seconds, num_modules):
-    time_started = time() + 2 # Time started is used for solving the button module.
+    time_started = time() + 1 # Time started is used for solving the button module.
 
     log("Inspecting bomb...")
 

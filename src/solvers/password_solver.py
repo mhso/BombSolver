@@ -32,31 +32,46 @@ def get_attempts(prefix, attemped_words):
 
 def solve(img, model, sc_func, click_func):
     index = 1
-    attempted_words = {}
+    attempted_prefixes = {} # Keep track of attempts for word prefixes.
     prev_search_word = "" # This is just for logging.
+    password_found = False
+
     while True: # DSF-ish traversal of possible passwords.
-        characters = password_features.get_password(img, model)
-        match = word_matching_prefix(characters[:index])
-        attemp_prefix = characters[:index-1]
-        attempts = get_attempts(attemp_prefix, attempted_words)
-        if attempts > 5:
-            index -= 1
-        while match is not None:
+        characters = password_features.get_password(img, model) # Get current set of characters.
+        match = word_matching_prefix(characters[:index]) # Get a word that matches current prefix.
+        attempt_prefix = characters[:index-1]
+        attempts = get_attempts(attempt_prefix, attempted_prefixes)
+
+        if attempts > 5: # No matching word was found with the current prefix.
+            index -= 1 # Go back to the previous letter and change it.
+
+        while match is not None: # Move through letters until prefix no longer matches or full password is found.
             if match != prev_search_word:
                 log(f"Attempting to write '{match}'", LOG_DEBUG, "Password")
+
             prev_search_word = match
-            if index == 5:
-                return True # Match found.
-            index += 1
-            match = word_matching_prefix(characters[:index])
-        if index == 0: # No passwords were found.
+
+            if index == 5: # We have found a full matching word with 5 letters.
+                password_found = True
+                break
+
+            index += 1 # Move to next letter.
+            match = word_matching_prefix(characters[:index]) # Get new match for longer prefix.
+
+        if index == 0 or password_found: # No password was found.
             break
+
         if attempts == 0:
-            attempted_words[attemp_prefix] = 1
+            attempted_prefixes[attempt_prefix] = 1
         else:
-            attempted_words[attemp_prefix] += 1
+            attempted_prefixes[attempt_prefix] += 1
+
+        # Cycle to next letter for the current index.
         get_next_char(index-1, click_func)
         sc = sc_func()[0]
 
         img = features_util.convert_to_cv2(sc)
-    return False
+
+        yield False
+
+    yield password_found

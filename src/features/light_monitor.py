@@ -14,13 +14,13 @@ class LightMonitor:
     """
     def __init__(self):
         self.pixel = (160, 10)
-        self.exploded = False
         self.change_event = Event()
         self.is_active = False
-        self.lights_on = True
 
     def start(self):
         self.is_active = True
+        self.lights_on = True
+        self.exploded = False
         Thread(target=self.monitor).start()
 
     def bomb_exploded(self, rgb):

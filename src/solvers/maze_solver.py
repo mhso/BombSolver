@@ -98,87 +98,124 @@ MAZE_NAMES = {
 }
 
 def get_circles(details):
+    """
+    Return maze square coordinate of the two highlighted
+    circles that identify the specific maze.
+    """
     c_1, c_2 = details
     width = 25
+
     return (
         (int(c_1[0] // width), int(c_1[1] // width)),
         (int(c_2[0] // width), int(c_2[1] // width))
     )
 
 def vertex(tupl):
+    """
+    Return the 'flattened' value of a coordinate.
+    """
     x, y = tupl
+
     return y * 6 + x
 
 def sort_circles(c_1, c_2):
     l = [c_1, c_2]
     l.sort(key=lambda t: vertex(t))
+
     return l[0] + l[1]
 
 def solve_maze(maze, start, end):
     """
-    Performs BFS search of the maze from 'start' to 'end'.
+    Performs BFS search from 'start' to 'end'.
     """
     queue = [start]
     marked = [False] * 36
     marked[vertex(start)] = True
     edge_to = [None] * 36
+
     while queue != []:
         c_v = queue.pop(0)
         if c_v == end:
             break
+
         c_x, c_y = c_v
         directions = maze[c_y][c_x]
         up = (c_x, c_y-1)
         up_v = vertex(up)
+
         if N in directions and not marked[up_v]:
             marked[up_v] = True
             edge_to[up_v] = N
             queue.append(up)
+
         down = (c_x, c_y+1)
         down_v = vertex(down)
+
         if S in directions and not marked[down_v]:
             marked[down_v] = True
             edge_to[down_v] = S
             queue.append(down)
+
         left = (c_x-1, c_y)
         left_v = vertex(left)
+
         if W in directions and not marked[left_v]:
             marked[left_v] = True
             edge_to[left_v] = W
             queue.append(left)
+
         right = (c_x+1, c_y)
         right_v = vertex(right)
+
         if E in directions and not marked[right_v]:
             marked[right_v] = True
             edge_to[right_v] = E
             queue.append(right)
+
     return edge_to
 
 def solve(img):
+    """
+    Solve the 'maze' module on the bomb.
+    First identifies the start and end points,
+    then identifies which of the 9 mazes it is.
+    Finally, solves the maze using BFS.
+    """
     start, end, contours = maze_features.get_maze_details(img)
+
+    # Get the coordinates of the two circles that uniquely identify the maze.
     c_1, c_2 = get_circles(contours)
     log(f"Start square: {start}, end: {end}", LOG_DEBUG, "Maze")
     log(f"Circles: {c_1} & {c_2}", LOG_DEBUG, "Maze")
+
     circles = sort_circles(c_1, c_2)
     maze_name = MAZE_NAMES[circles]
     log(f"Maze: {maze_name}", LOG_DEBUG, "Maze")
+
     maze = MAZES[maze_name]
 
     directions = solve_maze(maze, start, end)
     pos = end
     direction = directions[vertex(pos)]
     path = []
+
+    # Traverse the maze and save each direction taken to a list.
     while direction is not None:
         x, y = pos
         path.append(direction)
+
         if direction == N:
             pos = (x, y+1)
+
         elif direction == S:
             pos = (x, y-1)
+
         elif direction == W:
             pos = (x+1, y)
+
         else:
             pos = (x-1, y)
+
         direction = directions[vertex(pos)]
 
     return list(reversed(path))

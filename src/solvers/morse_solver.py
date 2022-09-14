@@ -55,10 +55,12 @@ def get_word_from_substring(substr):
     """
     matches = 0
     index = 0
+
     for i, word in enumerate(WORDS):
         if word.find(substr) != -1:
             matches += 1
             index = i
+
     return index if matches == 1 else None
 
 def get_word_from_prefix(prefix):
@@ -68,10 +70,12 @@ def get_word_from_prefix(prefix):
     """
     matches = 0
     index = 0
+
     for i, word in enumerate(WORDS):
         if word.startswith(prefix):
             matches += 1
             index = i
+
     return index if matches == 1 else None
 
 def is_lit(pixel, rgb):
@@ -90,14 +94,17 @@ def solve(img, screenshot_func):
     sleep_duration = 0.05
     duration = 0
     solved_from_substr = False
+
     for i in range(2): # Run twice to ensure the whole sequence of letters are recorded.
         if solved_from_substr:
             log("Solved Morse in first round!", LOG_DEBUG, "Morse")
             break
+
         lit = is_lit(pixel, rgb)
         checkpoint = time()
         letters = ""
         symbols = ""
+
         while True:
             sleep(sleep_duration)
             screenshot, _, _ = screenshot_func()
@@ -105,6 +112,7 @@ def solve(img, screenshot_func):
 
             if is_lit(pixel, rgb) != lit: # Check if light has changed state.
                 lit = not lit
+
                 if lit:
                     duration = time() - checkpoint # Record length of gap.
                     checkpoint = time() # Record time of light being lit.
@@ -113,17 +121,22 @@ def solve(img, screenshot_func):
                         letter = LETTERS.get(symbols, '')
                         log(f"LETTER: {letter}", LOG_DEBUG, "Morse")
                         letters += letter
+
                         if i == 0 and len(letters) > 1 and get_word_from_substring(letters[1:]) is not None:
                             # Terminate if we can already guess from a substring of the word.
                             solved_from_substr = True # Indicate word was solved in first round.
                             break
+
                         if i == 1 and get_word_from_prefix(letters) is not None:
                             break # Terminate if we can already guess from a prefix of the word.
+
                         symbols = ""
+    
                     if duration >= word_pause:
                         pos_str = "START" if i == 0 else "END"
                         log(f"=== {pos_str} OF WORD ===", LOG_DEBUG, "Morse")
                         break
+
                 else:
                     duration = time() - checkpoint # Record length of flash.
                     checkpoint = time() # Record time of light being unlit.
@@ -133,10 +146,13 @@ def solve(img, screenshot_func):
                     elif duration >= dot_pause:
                         symbols += "."
 
+            yield False # Yield dummy return value cause we are not done yet.
+
     # Return amount of times to press morse button.
     presses = (
         get_word_from_substring(letters[1:]) if solved_from_substr
         else get_word_from_prefix(letters)
     )
     log(f"Word: {WORDS[presses]}", LOG_DEBUG, "Morse")
-    return presses, FREQUENCIES[presses]
+
+    yield presses, FREQUENCIES[presses]

@@ -3,6 +3,7 @@ from glob import glob
 from sys import argv
 import os
 from cv2 import imwrite
+from features.light_monitor import LightMonitor
 import util.inspect_modules as inspect_modules
 import util.inspect_bomb as inspect_bomb
 from debug import log
@@ -24,8 +25,8 @@ if len(argv) > 1:
         exit(0)
     DATA_TYPE = argv[1]
 INSPECTIONS = int(argv[2]) if len(argv) > 2 else -1
-AUTO_LABEL = bool(argv[3]) if len(argv) > 3 else True
-config.MAX_GPU_FRACTION = 0.2
+AUTO_LABEL = argv[3] == "True" if len(argv) > 3 else True
+config.MAX_GPU_FRACTION = 0.3
 MODEL = (None if not AUTO_LABEL else
          classifier.load_from_file("../resources/trained_models/module_model"))
 SW, SH = win_util.get_screen_size()
@@ -97,24 +98,34 @@ SUFFIX = "times" if INSPECTIONS != 1 else "time"
 log(f"Running {INSPECT_STR} {SUFFIX}.")
 log(f"Auto labeling {'enabled' if AUTO_LABEL else 'disabled'}.")
 
-log("Waiting for user to press S")
-main.sleep_until_start()
+main.LIGHT_MONITOR = LightMonitor()
 
-while INSPECTIONS:
-    if "skip" not in argv:
-        main.start_level()
-        main.await_level_start()
+try:
+    log("Waiting for user to press S")
+    main.sleep_until_start()
 
-    IMAGES = inspect_bomb.inspect_bomb()
-    DATA = inspect_bomb.partition_sides(IMAGES)
-    FLATTENED = DATA[0]
-    FLATTENED.extend(DATA[1])
-    FLATTENED.extend(DATA[2])
-    PREDICTIONS = process_bomb_data(FLATTENED)
-    if DATA_TYPE in ("modules", "both"):
-        PREDICTIONS = PREDICTIONS[:12]
-        DATA, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_LABELS)
-        process_module_data(DATA, FILTERED_PREDICTIONS)
-    if "skip" not in argv or INSPECTIONS > 1:
-        restart_level(LEVEL)
-    INSPECTIONS -= 1
+    while INSPECTIONS:
+        if "skip" not in argv:
+            main.start_level()
+            sleep(0.5)
+            main.LIGHT_MONITOR.start() # Track when the light in the room turns off.
+            sleep(1)
+            main.await_level_start()
+
+        IMAGES = inspect_bomb.inspect_bomb()
+        DATA = inspect_bomb.partition_sides(IMAGES)
+        FLATTENED = DATA[0]
+        FLATTENED.extend(DATA[1])
+        FLATTENED.extend(DATA[2])
+        PREDICTIONS = process_bomb_data(FLATTENED)
+        if DATA_TYPE in ("modules", "both"):
+            PREDICTIONS = PREDICTIONS[:12]
+            DATA, FILTERED_PREDICTIONS = inspect_modules.inspect(PREDICTIONS, INCLUDED_LABELS)
+            process_module_data(DATA, FILTERED_PREDICTIONS)
+
+        main.LIGHT_MONITOR.shut_down()
+        if "skip" not in argv or INSPECTIONS > 1:
+            restart_level(LEVEL)
+        INSPECTIONS -= 1
+finally:
+    main.LIGHT_MONITOR.shut_down()

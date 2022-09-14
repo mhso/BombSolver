@@ -86,7 +86,6 @@ def inspect_bomb(inspect_both_sides=True):
     sleep(0.5)
     return_tupl = (front_img, left_img, right_img, top_img, bottom_img)
     if inspect_both_sides:
-        # Only capture images of the back of the bomb if there are more than 5 modules.
         flip_bomb(sw, sh)
         back_img = screenshot(460, 220, 1000, 640)
         sleep(0.4)
